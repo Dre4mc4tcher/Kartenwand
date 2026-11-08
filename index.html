@@ -166,11 +166,12 @@ dialog#chk::backdrop { background: rgba(5,8,6,.72); backdrop-filter: blur(3px); 
 <header class="wrap top">
   <div class="brand">
     <h1>Kartenwand</h1>
-    <p class="lead">Deine Magic-Sammlung als Bilder. Kartendaten und Bilder kommen live von Scryfall. Nur die Karten-IDs aus der CSV werden dorthin gesendet, die Datei selbst bleibt auf deinem Rechner.</p>
+    <p class="lead">Deine Magic-Sammlung als Bilder. Kartendaten, Bilder und Preise kommen live von Scryfall. Dorthin gehen nur Karten-IDs, nicht deine Dateien.</p>
   </div>
   <div class="loadbox">
     <button class="btn primary" id="pick" type="button">CSV-Dateien laden</button>
     <button class="btn" id="pickadd" type="button">Dateien hinzufügen</button>
+    <button class="btn" id="repoload" type="button" hidden>Aus Repository laden</button>
     <button class="btn" id="checkopen" type="button">Liste abgleichen</button>
     <input id="file" type="file" accept=".csv,.txt,text/csv,text/plain" multiple hidden>
     <input id="fileadd" type="file" accept=".csv,.txt,text/csv,text/plain" multiple hidden>
@@ -267,167 +268,7 @@ dialog#chk::backdrop { background: rgba(5,8,6,.72); backdrop-filter: blur(3px); 
 
 <div class="drop" id="drop">CSV-Dateien hier ablegen</div>
 
-<script type="text/plain" id="sample-csv">Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency
-,No Remark,Badgermole Cub (Borderless),TLA,Avatar: The Last Airbender,326,foil,mythic,1,be16c053-99e1-4921-8530-5135c989149d,0,false,false,NM,EN,EUR
-,No Remark,"The Theorist, Jace Beleren (Borderless) (0363)",FRA,Reality Fracture,363,foil,mythic,1,707f6fbb-94f6-459b-8a21-bec360b7b668,0,false,false,NM,EN,EUR
-,No Remark,"Shang-Chi, Master of Kung Fu (Borderless) (0396)",MSH,Marvel Super Heroes,0396,foil,mythic,1,b367d034-ae08-4b08-b090-39a6d4f79dc2,0,false,false,NM,EN,EUR
-,No Remark,"Codie, Ravenous Codex (Showcase) (Fracture Foil)",FRA,Reality Fracture,422,foil,mythic,1,53015f09-fcb8-448e-baf3-36524f4217a7,0,false,false,NM,EN,EUR
-,No Remark,Ajani Unrelenting (Borderless),FRA,Reality Fracture,308,foil,mythic,1,2b293d8f-7877-4212-af6b-e898d759d013,0,false,false,NM,EN,EUR
-,No Remark,Consign to Memory (Borderless),SPG,Special Guests,162,foil,mythic,1,ec9ffeac-ae49-465e-9dc5-976db8252fe6,0,false,false,NM,EN,EUR
-,No Remark,Ajani Resolute (Borderless),FRA,Reality Fracture,291,normal,mythic,1,96aec358-5f18-44c7-8223-a41c9d583961,0,false,false,NM,EN,EUR
-,No Remark,"Samut, Hazoret's Champion (Borderless)",FRA,Reality Fracture,311,foil,rare,1,f909fe3b-c349-4a19-90ad-aa51f8e73b66,0,false,false,NM,EN,EUR
-,No Remark,Liliana the Repentant (Borderless),FRA,Reality Fracture,305,foil,rare,2,ddefddbc-c769-4e53-a9b3-087578ae8bc0,0,false,false,NM,EN,EUR
-,No Remark,"Chandra, Chill of Compliance (Borderless)",FRA,Reality Fracture,297,normal,mythic,1,549cd466-d726-4ac9-a9e8-c1cd3ecda998,0,false,false,NM,EN,EUR
-,No Remark,Coat of Arms (2682),SLD,Secret Lair Drop Series,2682,foil,rare,1,e09f1823-f2b1-4fa2-8e8c-4a3bf0473a14,0,false,false,NM,EN,EUR
-,No Remark,Gardenize (Showcase) (0406),FRA,Reality Fracture,406,foil,mythic,1,1ed34863-2dca-444e-85ea-70f305b0d32a,0,false,false,NM,EN,EUR
-,No Remark,"Lathril, Blade of the Elves",SLD,Secret Lair Drop Series,2681,foil,rare,1,f7f00791-de5e-4f10-9931-8694afcd580c,0,false,false,NM,EN,EUR
-,No Remark,Dark Matter Manipulator (Showcase),FRA,Reality Fracture,340,foil,rare,1,5fd4f195-ee14-4aff-91b0-7ed5b552fd35,0,false,false,NM,EN,EUR
-,No Remark,Dark Matter Manipulator (Showcase),FRA,Reality Fracture,340,normal,rare,1,5fd4f195-ee14-4aff-91b0-7ed5b552fd35,0,false,false,NM,EN,EUR
-,R1-004-N,"Aurelia, the Warleader",GTC,Gatecrash,143,normal,mythic,3,4ec18e35-05e4-4bfc-b32b-c3e71c95a71d,0,false,false,NM,DE,EUR
-,No Remark,Return to the Light Realms (Borderless) (0323),FRA,Reality Fracture,323,normal,mythic,1,c0d25cd5-1977-4303-b83c-0dd415c13077,0,false,false,NM,EN,EUR
-,No Remark,Dark Matter Manipulator,FRA,Reality Fracture,52,normal,rare,1,4ec912d5-cbe7-4d07-9ece-b03ac02d3055,0,false,false,NM,DE,EUR
-,No Remark,Chancellor of the Tangle,NPH,New Phyrexia,106,foil,rare,1,6d129aa8-b637-451e-8123-5221e08cc2cc,0,false,false,NM,EN,EUR
-,B1R1,Krark-Clan Shaman,MRD,Mirrodin,98,normal,common,6,975f9ea8-af2c-456f-acd0-ffa9ea0d98c1,0,false,false,NM,DE,EUR
-,No Remark,"Thranduil, the Elvenking (Borderless)",HOB,The Hobbit,246,normal,rare,1,a416ca91-e646-40b4-824c-24aed6b9c683,0,false,false,NM,EN,EUR
-,R1-004-N,Blood Moon,MMA,Modern Masters,106,normal,rare,2,310647b0-54a4-4c0a-acdd-5e8e91972a87,0,false,false,NM,EN,EUR
-,R1-004-N,"Eiganjo, Seat of the Empire",NEO,Kamigawa: Neon Dynasty,268,normal,rare,1,c375a022-5b57-496d-a802-e4ea8376e9e4,0,false,false,NM,DE,EUR
-,R1-004-N,Embercleave,PPELD,Promo Pack: Throne of Eldraine,120,normal,mythic,1,3e0838ff-8eb1-40ef-aee9-97cc52b5b8e0,0,false,false,NM,DE,EUR
-,No Remark,Lich's Relic (Borderless),FRA,Reality Fracture,365,foil,rare,1,b66b0007-e973-4854-ac84-b1017b14186c,0,false,false,NM,EN,EUR
-,No Remark,"Garruk, Veiled Butcher (Borderless)",FRA,Reality Fracture,303,foil,mythic,1,9efdedea-c9a4-4085-9da9-4293200b99e0,0,false,false,NM,EN,EUR
-,R1-004-N,Norin the Wary,TSP,Time Spiral,171,normal,rare,1,f61ea59a-1db0-4e6b-bcde-19787c76a49b,0,false,false,NM,DE,EUR
-,No Remark,Counterbalance (2066) (Rainbow Foil),SLD,Secret Lair Drop Series,2066,foil,rare,1,3fd8a7bf-c679-470a-8e56-d3f59b7ba488,0,false,false,NM,EN,EUR
-,No Remark,The Ooze,TMT,Teenage Mutant Ninja Turtles,177,normal,rare,1,1f9bd4da-4626-40ba-95f4-14e3de36f989,0,false,false,NM,DE,EUR
-,No Remark,"Kambal, Profiteering Mayor",OTJ,Outlaws of Thunder Junction,211,normal,rare,1,d53a775d-5898-41a8-b404-9b7d4721c6ba,0,false,false,NM,EN,EUR
-,No Remark,"Samut, Tyrant of Naktamun (Borderless)",FRA,Reality Fracture,302,normal,rare,2,7081f960-3476-4acd-8272-600c1e50b560,0,false,false,NM,EN,EUR
-,No Remark,Draconic Visitor (Borderless),FRA,Reality Fracture,368,normal,rare,1,d061676d-093a-47ac-9064-3edcacbc4485,0,false,false,NM,EN,EUR
-,B1R1,Fabricate,MRD,Mirrodin,35,normal,uncommon,4,a742e23c-1991-4dce-b670-dea92a1cf4ec,0,false,false,NM,EN,EUR
-,B1R1,Fabricate,MRD,Mirrodin,35,normal,uncommon,1,a742e23c-1991-4dce-b670-dea92a1cf4ec,0,false,false,NM,DE,EUR
-,R1-004-N,Flusterstorm,IMA,Iconic Masters,55,normal,rare,1,f900eeb7-7c45-44bc-ad3a-0bbe594ecf50,0,false,false,NM,EN,EUR
-,B1R1,Freed from the Real,SOK,Saviors of Kamigawa,38,normal,common,2,e9ecee02-12c0-4aed-a679-41bce95e0cda,0,false,false,NM,DE,EUR
-,No Remark,Radagast of Rhosgobel (Extended Art),HOB,The Hobbit,309,normal,rare,1,3ea01785-add0-487d-b708-5bbf71033899,0,false,false,NM,EN,EUR
-,B1R1,Seething Song,MRD,Mirrodin,104,normal,common,5,9213d580-7953-455f-abbe-99d3db2705cf,0,false,false,NM,DE,EUR
-,B1R1,Lightning Greaves,MRD,Mirrodin,199,normal,uncommon,6,61a28870-cf78-4323-9d82-cee764067764,0,false,false,NM,DE,EUR
-,B1R1,Lightning Greaves,MRD,Mirrodin,199,normal,uncommon,1,61a28870-cf78-4323-9d82-cee764067764,0,false,false,NM,EN,EUR
-,R1-004-N,Drana and Linvala,MOM,March of the Machine,222,normal,rare,1,bbda000f-3cf7-48b6-96ff-c23a3a64eab5,0,false,false,NM,EN,EUR
-,No Remark,"Gollum, Riddle Master",HOB,The Hobbit,70,foil,mythic,1,bbdc7e37-c65a-497a-92b7-a30a6e369c71,0,false,false,NM,EN,EUR
-,R1-004-N,Grafdigger's Cage,M20,Core Set 2020,227,normal,rare,1,0a135e09-b534-4836-9a10-3a9a4a9f8c53,0,false,false,NM,DE,EUR
-,R1-004-N,Whispering Madness,GTC,Gatecrash,207,normal,rare,2,64e4b0cc-e611-4a4b-8392-b37bfc3a77e1,0,false,false,NM,DE,EUR
-,No Remark,Simulacrum Shaper (Borderless),FRA,Reality Fracture,332,normal,rare,1,071ed239-6875-4090-94b3-56b246a9407b,0,false,false,NM,DE,EUR
-,B1R1,Vault of Whispers,MRD,Mirrodin,286,normal,common,2,73866487-33f4-4f64-b100-2c4ddadcd74e,0,false,false,NM,DE,EUR
-,No Remark,"Lyra, Archangel of Dawn (Borderless)",FRA,Reality Fracture,294,normal,rare,1,fc4635a1-1497-4643-b3e5-954808b07a54,0,false,false,NM,EN,EUR
-,No Remark,Cultivate (2679),SLD,Secret Lair Drop Series,2679,foil,rare,1,2b7f7699-caf5-4fc8-a4e5-13a3d992639d,0,false,false,NM,EN,EUR
-,B1R1,Great Furnace,MRD,Mirrodin,282,normal,common,1,2877281d-c85d-4f32-b40d-828b93c4ee8e,0,false,false,NM,EN,EUR
-,No Remark,Verdant Kraken,FRA,Reality Fracture,118,normal,rare,1,2bb7a8eb-227f-410b-859f-750ef0aea2f0,0,false,false,NM,EN,EUR
-,No Remark,"Omnath, Locus of the Void (Extended Art)",FRC,Commander: Reality Fracture,88,normal,rare,1,6183342b-7dce-49e1-a1c3-bdadbeeabbd3,0,false,false,NM,EN,EUR
-,B1R1,Thoughtcast,MRD,Mirrodin,54,normal,common,1,efb965a7-877a-4302-b507-25b0a9e32d9b,0,false,false,NM,EN,EUR
-,B1R1,Ancient Den,MRD,Mirrodin,278,normal,common,1,cc857fbd-8e0f-4bff-8f14-561c9925c484,0,false,false,NM,DE,EUR
-,B1R1,Ancient Den,MRD,Mirrodin,278,normal,common,2,cc857fbd-8e0f-4bff-8f14-561c9925c484,0,false,false,NM,EN,EUR
-,No Remark,Plains (0317) (Surge Foil),HOB,The Hobbit,317,foil,land,1,3550f914-cacb-4849-af06-1a7b25c2c95f,0,false,false,NM,EN,EUR
-,No Remark,Plains (0320) (Surge Foil),HOB,The Hobbit,320,foil,land,1,128226f4-a733-4f0a-ab2b-7789cfa8b443,0,false,false,NM,EN,EUR
-,No Remark,Plains (0319) (Surge Foil),HOB,The Hobbit,319,foil,land,1,46c75f8e-6590-4338-abbd-a37e08dbd58c,0,false,false,NM,EN,EUR
-,No Remark,"Lyra, Archangel of Dawn",FRA,Reality Fracture,201,normal,rare,1,86a3866e-68a8-402c-baf0-1908e98e3995,0,false,false,NM,DE,EUR
-,R1-004-N,"Kataki, War's Wage",MMA,Modern Masters,20,normal,rare,1,4d84ac44-01d8-415e-af69-7c608ac8ae20,0,false,false,NM,EN,EUR
-,R1-004-N,Panglacial Wurm,CSP,Coldsnap,116,normal,rare,1,063bb28b-5e32-4f31-a208-16b653edf413,0,false,false,NM,DE,EUR
-,No Remark,Plains (0318) (Surge Foil),HOB,The Hobbit,318,foil,land,1,f82548c7-24ed-4529-8b57-7407dc0b8c8b,0,false,false,NM,EN,EUR
-,No Remark,Loyal Tutor,FRA,Reality Fracture,14,normal,rare,1,490dae91-94ce-42a9-a11f-6c5e77c4e486,0,false,false,NM,DE,EUR
-,B1R1,Locust Miser,SOK,Saviors of Kamigawa,80,normal,uncommon,1,55bf4dda-0ce8-4e35-88d9-18a22400e6cb,0,false,false,NM,DE,EUR
-,B1R1,Locust Miser,SOK,Saviors of Kamigawa,80,normal,uncommon,3,55bf4dda-0ce8-4e35-88d9-18a22400e6cb,0,false,false,NM,EN,EUR
-,R1-004-N,Vault of the Archangel,DKA,Dark Ascension,158,normal,rare,1,35a65437-430a-42ef-854f-6e66f8e1a04a,0,false,false,NM,EN,EUR
-,No Remark,"Ob Nixilis, the Ascended (Extended Art)",FRC,Commander: Reality Fracture,90,normal,rare,1,c889f089-423b-4b36-b1ca-8ccc7485d144,0,false,false,NM,EN,EUR
-,B1R1,Talisman of Indulgence,MRD,Mirrodin,255,normal,uncommon,7,e14011b3-56ce-4b93-833f-d8403809159c,0,false,false,NM,DE,EUR
-,B1R1,Talisman of Indulgence,MRD,Mirrodin,255,normal,uncommon,5,e14011b3-56ce-4b93-833f-d8403809159c,0,false,false,NM,EN,EUR
-,B1R1,Sakura-Tribe Scout,SOK,Saviors of Kamigawa,144,normal,common,9,9cbdda50-8a27-4094-849d-b6f66def82ce,0,false,false,NM,DE,EUR
-,B1R1,Sakura-Tribe Scout,SOK,Saviors of Kamigawa,144,normal,common,14,9cbdda50-8a27-4094-849d-b6f66def82ce,0,false,false,NM,EN,EUR
-,No Remark,Gardenize (Showcase) (0345),FRA,Reality Fracture,345,foil,rare,1,c60d4862-9615-4522-8724-489065d6ef6b,0,false,false,NM,EN,EUR
-,No Remark,Island (Borderless) (0385),FRA,Reality Fracture,385,foil,land,3,bc4cd881-9c34-4cf9-8afe-050e803f34a6,0,false,false,NM,EN,EUR
-,No Remark,"Jace, Reality Sculptor (Borderless)",FRA,Reality Fracture,300,normal,rare,1,dafe1979-fda7-4164-a362-b9f789f25710,0,false,false,NM,EN,EUR
-,R1-004-N,Sanity Grinding,EVE,Eventide,29,normal,rare,1,7d3e377f-6bb7-4fa1-b58b-7e2af06ca4b7,0,false,false,NM,EN,EUR
-,No Remark,"Jace, Reality Sculptor",FRA,Reality Fracture,216,foil,rare,1,74087795-0b38-4fd2-9841-147583baca41,0,false,false,NM,EN,EUR
-,No Remark,Dramatic Reversal,30A-P,30th Anniversary Promos,24,foil,promo,1,5a5e1516-c2cf-4535-a6dc-42a5f3544d88,0,false,false,NM,EN,EUR
-,R1-004-N,Mirage Mirror,HOU,Hour of Devastation,165,normal,rare,5,29148d7e-b398-4e19-a29e-d9a660ad5016,0,false,false,NM,EN,EUR
-,No Remark,Island (Borderless) (0386),FRA,Reality Fracture,386,foil,land,4,6ff3f00e-4ec2-41ef-bd19-fa830480245d,0,false,false,NM,EN,EUR
-,R1-004-N,Sire of Insanity,DGM,Dragon's Maze,104,normal,rare,2,3665cfb7-51b6-4083-8eae-fbd3fa6c3554,0,false,false,NM,EN,EUR
-,No Remark,Ajani's Anguish (Borderless),FRA,Reality Fracture,367,normal,rare,1,e0bad302-16af-48c9-a33b-2def7daf527d,0,false,false,NM,EN,EUR
-,R1-004-N,Ammit Eternal,HOU,Hour of Devastation,57,normal,rare,1,1b04934f-87d1-4768-b7b5-5f7249a09771,0,false,false,NM,DE,EUR
-,No Remark,Island (Borderless) (0387),FRA,Reality Fracture,387,foil,land,3,b256a981-ba4b-43b9-83a3-f31a105a2c26,0,false,false,NM,EN,EUR
-,B1R1,Talisman of Progress,MRD,Mirrodin,256,normal,uncommon,3,41ff849e-2439-4690-8aa4-769039b6da4c,0,false,false,NM,EN,EUR
-,B1R1,Talisman of Progress,MRD,Mirrodin,256,normal,uncommon,1,41ff849e-2439-4690-8aa4-769039b6da4c,0,false,false,NM,DE,EUR
-,R1-004-N,Prime Speaker Zegana,GTC,Gatecrash,188,normal,mythic,1,f30dfb8e-f540-45ab-a4e8-63425099646a,0,false,false,NM,DE,EUR
-,No Remark,"Jace, Multiverse Architect (Borderless)",FRC,Commander: Reality Fracture,1,normal,mythic,1,55cd03d9-2535-4cf3-a8b2-1418e1190f4a,0,false,false,NM,EN,EUR
-,No Remark,"Karn, Argent Defender",FRA,Reality Fracture,279,normal,rare,1,1ebbbddb-2dc3-4194-b72b-13bcebe2ab89,0,false,false,NM,EN,EUR
-,R1-004-N,"Ruric Thar, the Unbowed",DGM,Dragon's Maze,99,normal,rare,2,84dd3586-7c3b-4f9c-a1eb-7745b75339b0,0,false,false,NM,DE,EUR
-,No Remark,Vraska's Final Mercy,FRA,Reality Fracture,71,foil,rare,1,992bd991-7cfb-459f-bafd-9a44f3c925c5,0,false,false,NM,EN,EUR
-,R1-004-N,Signal the Clans,GTC,Gatecrash,194,normal,rare,3,34261992-db62-49e3-95bc-1b2960868de4,0,false,false,NM,DE,EUR
-,No Remark,Mountain (0197),HOB,The Hobbit,197,foil,land,1,51acfb01-4b0b-48fc-9704-a9b4a1e43a23,0,false,false,NM,EN,EUR
-,B1R1,Talisman of Impulse,MRD,Mirrodin,254,normal,uncommon,9,a00b65f7-70d0-4bbd-ac13-be24cc3374ee,0,false,false,NM,DE,EUR
-,B1R1,Talisman of Impulse,MRD,Mirrodin,254,normal,uncommon,4,a00b65f7-70d0-4bbd-ac13-be24cc3374ee,0,false,false,NM,EN,EUR
-,No Remark,"Vraska, the Cutting Glare (Borderless)",FRA,Reality Fracture,319,normal,rare,1,9e80737c-c228-4a69-acd8-c8bb2f6d8bd0,0,false,false,NM,DE,EUR
-,No Remark,"Lyra, Tolarian Archangel (Borderless)",FRA,Reality Fracture,301,normal,rare,1,06796f03-18d4-4286-ab77-3cd9aa517090,0,false,false,NM,EN,EUR
-,B1R1,Talisman of Unity,MRD,Mirrodin,257,normal,uncommon,10,d6cc8a5a-b98b-4758-a168-bf2ef738fb05,0,false,false,NM,DE,EUR
-,B1R1,Talisman of Unity,MRD,Mirrodin,257,normal,uncommon,2,d6cc8a5a-b98b-4758-a168-bf2ef738fb05,0,false,false,NM,EN,EUR
-,No Remark,Plains (0194),HOB,The Hobbit,194,foil,land,1,24dc369c-020a-4115-a4bb-d60a44de64e3,0,false,false,NM,EN,EUR
-,R1-004-N,Biovisionary,GTC,Gatecrash,146,normal,rare,4,2000b4e8-7887-454e-9d52-211516613dd0,0,false,false,NM,EN,EUR
-,No Remark,Germinate Recruits,FRA,Reality Fracture,9,foil,rare,1,1b5d7d19-b32a-4786-ae9a-00da5e6658ad,0,false,false,NM,EN,EUR
-,No Remark,Swamp (0196),HOB,The Hobbit,196,foil,land,1,c5f590a3-9993-4ac4-a93c-1beb44eda17b,0,false,false,NM,EN,EUR
-,R1-004-N,"Exava, Rakdos Blood Witch",DGM,Dragon's Maze,69,normal,rare,3,6cb72a64-89e7-4b0e-a3d3-1309829071d2,0,false,false,NM,EN,EUR
-,No Remark,Cruel Calculations (Showcase),FRA,Reality Fracture,336,foil,rare,1,8bdd99c6-d0f1-4922-ada8-0c4566860e15,0,false,false,NM,EN,EUR
-,No Remark,Cruel Calculations (Showcase),FRA,Reality Fracture,336,normal,rare,1,8bdd99c6-d0f1-4922-ada8-0c4566860e15,0,false,false,NM,EN,EUR
-,No Remark,Identity Echo,FRA,Reality Fracture,87,normal,rare,1,e600b33b-8916-43dd-95d3-d7cbf874933d,0,false,false,NM,EN,EUR
-,No Remark,Island (0195),HOB,The Hobbit,195,foil,land,1,739aaaac-c424-4ea7-a084-62a6fc0438b0,0,false,false,NM,EN,EUR
-,No Remark,Solarium Sentry,FRA,Reality Fracture,148,foil,rare,1,1ef12dcf-df50-4da6-8c4c-e2937ba9698e,0,false,false,NM,EN,EUR
-,R1-004-N,Firemane Avenger,GR1,Guilds of Ravnica: Guild Kits,89,normal,rare,1,9a78e99c-b517-44ff-9291-6c828ac8469f,0,false,false,NM,EN,EUR
-,No Remark,Face Yourself (Borderless),FRA,Reality Fracture,370,normal,rare,1,68930b71-d96e-4e08-9547-7f8160d7ab73,0,false,false,NM,EN,EUR
-,R1-004-N,Spirit of the Hearth,EVE,Eventide,14,normal,rare,1,667cf0b6-1dd9-420a-abf8-f6a698aafea7,0,false,false,NM,DE,EUR
-,No Remark,"Jhoira, Weatherlight Corsair (Extended Art)",FRC,Commander: Reality Fracture,93,normal,rare,1,116dc6fb-cfa4-4bc6-b897-95dd0ee0a642,0,false,false,NM,EN,EUR
-,R1-004-N,Savageborn Hydra,DGM,Dragon's Maze,100,normal,mythic,2,2f2b73cd-6179-4885-9d92-1782d0b492c1,0,false,false,NM,DE,EUR
-,No Remark,Extrapolate the Impossible (Borderless),FRA,Reality Fracture,364,normal,rare,1,a20f408a-87b2-4ee3-a1b1-520b38f54d9e,0,false,false,NM,EN,EUR
-,R1-004-N,Endless Sands,HOU,Hour of Devastation,176,normal,rare,6,9ebd3e0a-30cc-4bc1-b9fa-6d65db9a6f5b,0,false,false,NM,EN,EUR
-,R1-004-N,Mangara of Corondor,TSP,Time Spiral,28,normal,rare,2,a785b66c-c5a4-4520-a9fa-aa199f7f56e5,0,false,false,NM,DE,EUR
-,No Remark,Hungering Puppetbeast (Showcase),FRA,Reality Fracture,346,foil,rare,1,3cee6c29-e9ab-4e86-8fc9-9b9c287ffdfd,0,false,false,NM,EN,EUR
-,R1-004-N,Greater Gargadon,TSP,Time Spiral,161,normal,rare,2,653ddfa0-2088-4503-a3ab-b0f1d55d8351,0,false,false,NM,DE,EUR
-,R1-004-N,Greater Gargadon,TSP,Time Spiral,161,normal,rare,1,653ddfa0-2088-4503-a3ab-b0f1d55d8351,0,false,false,NM,EN,EUR
-,R1-004-N,Jester's Scepter,CSP,Coldsnap,137,normal,rare,2,7118c2e0-04d6-4a71-8ffd-b9365b154050,0,false,false,NM,EN,EUR
-,R1-004-N,Jester's Scepter,CSP,Coldsnap,137,normal,rare,1,7118c2e0-04d6-4a71-8ffd-b9365b154050,0,false,false,NM,DE,EUR
-,No Remark,Stinging Vitriol,FRA,Reality Fracture,152,foil,rare,1,a7d78297-7411-4ec5-8931-a25146869d5b,0,false,false,NM,EN,EUR
-,No Remark,Stinging Vitriol,FRA,Reality Fracture,152,normal,rare,1,a7d78297-7411-4ec5-8931-a25146869d5b,0,false,false,NM,DE,EUR
-,No Remark,Annul,PPEOE,Promo Pack: Edge of Eternities,394,normal,promo,1,26dd02c4-569b-437f-b9dd-bd2f1d86a968,0,false,false,NM,EN,EUR
-,No Remark,Frostbite Pyromental (Borderless),FRA,Reality Fracture,333,normal,rare,1,79ff0b78-c220-4940-8957-77cf4fd820e2,0,false,false,NM,EN,EUR
-,R1-004-N,Trait Doctoring,DGM,Dragon's Maze,18,normal,rare,8,e21a7981-5940-4b75-907f-7600a742f946,0,false,false,NM,EN,EUR
-,R1-004-N,"Melek, Izzet Paragon",DGM,Dragon's Maze,84,normal,rare,1,3e892d86-f443-4846-8049-40ec6b8c22b4,0,false,false,NM,EN,EUR
-,R1-004-N,Imperial Mask,FUT,Future Sight,23,normal,rare,1,bb02f692-80a9-4740-afde-cb4792d24774,0,false,false,NM,DE,EUR
-,R1-004-N,Blood Scrivener,DGM,Dragon's Maze,22,normal,rare,6,9ea8179a-d3c9-4cdc-a5b5-68cc73279050,0,false,false,NM,DE,EUR
-,R1-004-N,Blood Scrivener,DGM,Dragon's Maze,22,normal,rare,5,9ea8179a-d3c9-4cdc-a5b5-68cc73279050,0,false,false,NM,EN,EUR
-,No Remark,Stinging Vitriol (Showcase),FRA,Reality Fracture,356,normal,rare,1,71fd89cc-bf57-4b6d-a788-b4c91b3db044,0,false,false,NM,EN,EUR
-,No Remark,Variable Chaser,FRA,Reality Fracture,47,foil,rare,1,e3afedb1-bf9d-4e31-9700-433514cc29b1,0,false,false,NM,EN,EUR
-,No Remark,Tenured Tethermage,FRA,Reality Fracture,154,foil,rare,1,1703306d-6a3d-4ab8-bf58-a9992236ef0f,0,false,false,NM,EN,EUR
-,No Remark,Tenured Tethermage,FRA,Reality Fracture,154,normal,rare,1,1703306d-6a3d-4ab8-bf58-a9992236ef0f,0,false,false,NM,DE,EUR
-,R1-004-N,Vesuvan Shapeshifter,TSP,Time Spiral,90,normal,rare,1,458031cc-238d-45f0-9a81-b52e82286e0f,0,false,false,NM,DE,EUR
-,No Remark,Extrapolate the Impossible,FRA,Reality Fracture,55,foil,rare,1,17fb6538-493c-41aa-ad13-3e63d3ad3317,0,false,false,NM,EN,EUR
-,No Remark,Proctor of Potential,FRA,Reality Fracture,145,foil,rare,1,cf0eec8c-0475-4050-8144-481a9bb13a0f,0,false,false,NM,EN,EUR
-,No Remark,Sear,PPECL,Promo Pack: Lorwyn Eclipsed,405,normal,promo,1,0a13f8e0-8b23-4553-ad76-9e52f8d4c63c,0,false,false,NM,EN,EUR
-,R1-004-N,Firemane Avenger,GTC,Gatecrash,163,normal,rare,1,e244c198-efdc-492a-9c52-76aac006de9d,0,false,false,NM,DE,EUR
-,R1-004-N,God-Pharaoh's Gift,HOU,Hour of Devastation,161,normal,rare,4,b2e85a9e-4c37-4721-b7ea-de3413ec39df,0,false,false,NM,EN,EUR
-,No Remark,Entrust the Spark (Showcase),FRA,Reality Fracture,350,normal,rare,2,cec7b201-e3c4-4bde-bfc1-0049be22b890,0,false,false,NM,EN,EUR
-,R1-004-N,Renounce the Guilds,DGM,Dragon's Maze,5,normal,rare,1,bc9acc14-24e0-4c03-a09a-2afee351f2cc,0,false,false,NM,DE,EUR
-,R1-004-N,Renounce the Guilds,DGM,Dragon's Maze,5,normal,rare,1,bc9acc14-24e0-4c03-a09a-2afee351f2cc,0,false,false,NM,EN,EUR
-,R1-004-N,Apocalypse Demon,HOU,Hour of Devastation,58,normal,rare,2,39dfbf99-55e8-468b-bcd9-9179cad7cab6,0,false,false,NM,EN,EUR
-,No Remark,Face Yourself,FRA,Reality Fracture,83,normal,rare,1,3ccf8f64-19bd-4fdf-b70a-30a042bacf2f,0,false,false,NM,DE,EUR
-,No Remark,Hungering Puppetbeast,FRA,Reality Fracture,107,foil,rare,1,3db2da7a-8088-4117-916b-f9c905d1b45b,0,false,false,NM,EN,EUR
-,No Remark,The Misty Mountains Cold,UMP,Unique and Miscellaneous Promos,321,foil,promo,1,1aaf8a8a-1032-4ee5-9c18-2debb40ec561,0,false,false,NM,EN,EUR
-,R1-004-N,Verdant Embrace,TSP,Time Spiral,232,normal,rare,2,3dd1d130-98e7-4898-9f13-2bb58fa4777b,0,false,false,NM,DE,EUR
-,No Remark,Puppet Crafting (Borderless),FRA,Reality Fracture,373,normal,rare,1,15126d14-3737-4377-8476-e5f05a54fc77,0,false,false,NM,EN,EUR
-,No Remark,Repurposed Enforcer (Showcase),FRA,Reality Fracture,335,normal,rare,2,ac0bd1be-36cb-483f-9c47-2714e534cb6c,0,false,false,NM,EN,EUR
-,R1-004-N,Hostile Desert,HOU,Hour of Devastation,178,normal,rare,1,250c35cb-77e7-4600-a915-ccf327fe3385,0,false,false,NM,DE,EUR
-,R1-004-N,Hostile Desert,HOU,Hour of Devastation,178,normal,rare,2,250c35cb-77e7-4600-a915-ccf327fe3385,0,false,false,NM,EN,EUR
-,R1-004-N,Wildfire Eternal,HOU,Hour of Devastation,109,normal,rare,2,fd845479-619a-4262-b445-d93975c183b4,0,false,false,NM,DE,EUR
-,R1-004-N,Take Possession,FUT,Future Sight,44,normal,rare,1,78366049-4613-4cd1-aab0-308996926563,0,false,false,NM,EN,EUR
-,No Remark,Tenured Tethermage (Showcase),FRA,Reality Fracture,357,normal,rare,1,6ae471aa-74c3-416b-a884-bcf1bb2f6004,0,false,false,NM,EN,EUR
-,No Remark,"Codie, Ravenous Codex (Extended Art)",FRA,Reality Fracture,431,normal,rare,2,1ad53db3-57e2-416d-907d-a71f63009c06,0,false,false,NM,EN,EUR
-,R1-004-N,Scion of Vitu-Ghazi,DGM,Dragon's Maze,7,normal,rare,4,3cd20865-0a9a-4a72-92f9-77c8d6384b46,0,false,false,NM,EN,EUR
-,R1-004-N,Dragonshift,DGM,Dragon's Maze,66,normal,rare,1,6c046e4e-810c-4123-bb1a-4f97e0cd43d1,0,false,false,NM,DE,EUR
-,No Remark,Possibility Technician,EOE,Edge of Eternities,153,normal,rare,1,4b146c78-403f-48c8-941d-41114498bb89,0,false,false,NM,EN,EUR
-,No Remark,Null Summoner (Showcase),FRA,Reality Fracture,353,foil,rare,1,fc488525-de0b-4a52-8a1a-6ee4e798474e,0,false,false,NM,EN,EUR
-,No Remark,Diviner of Victory (Extended Art),FRA,Reality Fracture,425,normal,rare,1,83582080-bbd8-421e-80d3-66a7144f03fd,0,false,false,NM,EN,EUR</script>
+<script type="text/plain" id="sample-csv"></script>
 <script>
 //#PURE-START
 function normCn(s) { return String(s || '').trim().toLowerCase().replace(/^0+(?=\d)/, ''); }
@@ -860,7 +701,7 @@ function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.pus
     if (!parts.length) { S.notice = ''; showError(errors.join(' ')); return; }
     await loadParts(parts, append, errors);
   }
-  async function loadParts(parts, append, errors) {
+  async function loadParts(parts, append, errors, label) {
     let rows = [], names = [];
     if (append) {
       const incoming = new Set(parts.map(p => p.name));
@@ -872,7 +713,7 @@ function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.pus
       for (const r of p.rows) rows.push({ ...r, file: p.name });
     }
     rows.forEach((r, i) => { r.order = i; });
-    S.rows = rows; S.files = names; S.label = names.slice().sort().join(' + ');
+    S.rows = rows; S.files = names; S.label = label || names.slice().sort().join(' + ');
     S.missing = new Set();
     S.notice = errors.length ? 'Nicht geladen: ' + errors.join(' ') : '';
     if (append) saveRemoved(); else { S.removed = loadRemoved(S.label); F.file = ''; }
@@ -887,6 +728,70 @@ function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.pus
     sel.innerHTML = '<option value="">Alle Dateien</option>' + S.files.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
     if (!S.files.includes(F.file)) F.file = '';
     sel.value = F.file;
+  }
+  /* ---------- CSV-Dateien aus dem Repository (GitHub Pages) ---------- */
+  const LIST_KEY = 'kartenwand-repo-liste-v1';
+  function repoTarget() {
+    const host = location.hostname, m = host.match(/^([^.]+)\.github\.io$/i);
+    if (!m) return null;
+    const segs = location.pathname.split('/').filter(Boolean);
+    if (segs.length && /\.[a-z0-9]+$/i.test(segs[segs.length - 1])) segs.pop();
+    return { owner: m[1], repo: segs.length ? segs[0] : host, dir: segs.slice(1).join('/') };
+  }
+  const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+  async function listRepoCsv() {
+    try {
+      const res = await fetch('csv-dateien.json', { cache: 'no-cache' });
+      if (res.ok) {
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : (data && data.files);
+        if (Array.isArray(arr) && arr.length) return { names: arr.map(String) };
+      }
+    } catch (e) { /* keine eigene Liste vorhanden */ }
+    const tg = repoTarget();
+    if (!tg) return { names: [] };
+    const key = tg.owner + '/' + tg.repo + '/' + tg.dir;
+    try {
+      const res = await fetch('https://api.github.com/repos/' + encodeURIComponent(tg.owner) + '/' + encodeURIComponent(tg.repo) + '/contents' + (tg.dir ? '/' + encPath(tg.dir) : ''), { headers: { Accept: 'application/vnd.github+json' } });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      const data = await res.json();
+      const names = (Array.isArray(data) ? data : []).filter(f => f.type === 'file' && /\.csv$/i.test(f.name)).map(f => f.name);
+      try { localStorage.setItem(LIST_KEY, JSON.stringify({ key, names })); } catch (e) { /* egal */ }
+      return { names };
+    } catch (e) {
+      try {
+        const o = JSON.parse(localStorage.getItem(LIST_KEY) || 'null');
+        if (o && o.key === key && Array.isArray(o.names) && o.names.length) return { names: o.names };
+      } catch (e2) { /* egal */ }
+      return { names: [], failed: true };
+    }
+  }
+  async function autoLoad() {
+    setStatus('Suche CSV-Dateien im Repository …');
+    const found = await listRepoCsv();
+    if (!found.names.length) {
+      setStatus('');
+      S.notice = found.failed
+        ? 'Die Dateiliste konnte nicht von GitHub geladen werden (Limit erreicht oder keine Verbindung). Lege eine Datei csv-dateien.json mit den Dateinamen neben diese Seite oder lade die CSV-Dateien über die Buttons.'
+        : 'Im Repository wurden keine CSV-Dateien gefunden.';
+      showError('');
+      render();
+      return;
+    }
+    const parts = [], errors = [];
+    for (const name of found.names) {
+      try {
+        setStatus('Lade ' + name + ' …');
+        const res = await fetch(encPath(name), { cache: 'no-cache' });
+        if (!res.ok) throw new Error('Status ' + res.status);
+        const rows = buildRows(parseCSV(await res.text()));
+        if (!rows.length) throw new Error('In der Datei wurden keine Karten gefunden.');
+        parts.push({ name: name.split('/').pop(), rows });
+      } catch (e) { errors.push('„' + name + '“: ' + e.message); }
+    }
+    setStatus('');
+    if (!parts.length) { S.notice = ''; showError('Keine der CSV-Dateien im Repository konnte geladen werden. ' + errors.join(' ')); return; }
+    await loadParts(parts, false, errors, 'repo:' + location.pathname);
   }
   async function refresh() {
     const token = ++loadToken;
@@ -973,7 +878,7 @@ function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.pus
     }).join('');
     const vis = visibleGroups();
     $('empty').hidden = S.view.length > 0;
-    $('emptyText').textContent = vis.length ? 'Keine Karte passt zu den aktuellen Filtern.' : 'Alle Karten wurden entfernt. Du kannst sie wiederherstellen oder eine andere CSV-Datei laden.';
+    $('emptyText').textContent = vis.length ? 'Keine Karte passt zu den aktuellen Filtern.' : (S.groups.length ? 'Alle Karten wurden entfernt. Du kannst sie wiederherstellen oder eine andere CSV-Datei laden.' : 'Noch keine Karten geladen. Lade CSV-Dateien über die Buttons oben' + (location.protocol === 'file:' ? '.' : ' oder lege sie ins Repository neben diese Seite und wähle „Aus Repository laden“.'));
     const total = vis.reduce((s, g) => s + g.qty, 0), shown = S.view.reduce((s, x) => s + x.g.qty, 0);
     const filtered = S.view.length !== vis.length;
     $('restore').hidden = !S.removed.size;
@@ -1155,7 +1060,10 @@ function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.pus
   loadCache().finally(() => {
     const sample = $('sample-csv').textContent.trim();
     if (sample) loadCSV(sample, 'export_Manabox_2026-11-02_114711.csv');
+    else if (location.protocol !== 'file:') autoLoad();
   });
+  if (location.protocol !== 'file:') $('repoload').hidden = false;
+  $('repoload').addEventListener('click', () => autoLoad());
 })();
 </script>
 </body>
