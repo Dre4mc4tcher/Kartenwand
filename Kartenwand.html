@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kartenwand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: ruhige Kopfzeile, klebende Werkzeugleiste, darunter ein dichtes Kartenraster im Verhältnis echter Karten (63 x 88 mm). */
+:root {
+  --bg: #eceee9;
+  --surface: #f7f8f5;
+  --ink: #1c2420;
+  --muted: #5d6a63;
+  --line: #cdd4ca;
+  --accent: #8f5f0c;
+  --accent-ink: #ffffff;  --shadow: 0 1px 2px rgba(20,30,24,.18), 0 6px 14px rgba(20,30,24,.12);
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1411;
+    --surface: #18201b;
+    --ink: #e5eae3;
+    --muted: #93a198;
+    --line: #2a352e;
+    --accent: #e2ab3c;
+    --accent-ink: #1b1505;    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 18px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1411;
+  --surface: #18201b;
+  --ink: #e5eae3;
+  --muted: #93a198;
+  --line: #2a352e;
+  --accent: #e2ab3c;
+  --accent-ink: #1b1505;  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 18px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  min-height: 100vh;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1800px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { padding-block: 28px 18px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; }
+.brand { min-width: 0; }
+h1 { margin: 0; font: 700 clamp(2.4rem, 6vw, 3.6rem)/0.95 var(--font-display); letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+.lead { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.loadbox { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; min-width: 0; }
+.filename { font: 500 12.5px/1.3 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; max-width: 34ch; }
+
+.btn { cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:disabled:hover { border-color: var(--line); }
+.btn.armed { background: #b3261e; border-color: #b3261e; color: #fff; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.cell { position: relative; min-width: 0; }
+.rm { position: absolute; left: 8px; top: 8px; z-index: 2; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; cursor: pointer; border: 0; border-radius: 50%; background: rgba(15,20,17,.82); color: #fff; font-size: 18px; line-height: 1; }
+.rm:hover { background: #b3261e; color: #fff; }
+@media (hover: hover) { .rm { opacity: 0; transition: opacity .12s; } .cell:hover .rm, .rm:focus-visible { opacity: 1; } }
+
+.toolbar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-block: 1px solid var(--line); }
+.toolbar .wrap { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; padding-block: 12px; }
+[hidden] { display: none !important; }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field > span { font: 600 11px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.field input[type="search"], .field select { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; height: 38px; }
+.field input[type="search"] { width: min(260px, 100%); }
+.field select { max-width: 220px; }
+.field input[type="range"] { accent-color: var(--accent); width: 130px; height: 38px; margin: 0; }
+.check { display: flex; align-items: center; gap: 7px; height: 38px; cursor: pointer; white-space: nowrap; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.spacer { flex: 1 1 0; }
+.count { font: 500 13px/1.3 var(--font-mono); color: var(--muted); height: 38px; display: flex; align-items: center; }
+
+.status { padding-block: 10px; }
+.status .box { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.status progress { flex: 0 0 180px; max-width: 40vw; height: 8px; accent-color: var(--accent); }
+.error { margin-block: 12px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); }
+.error b { font-weight: 600; }
+
+main.wrap { padding-block: 22px 56px; }
+.grid { --tile: 200px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tile), 1fr)); gap: 18px 14px; }
+.tile { all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: block; width: 100%; min-width: 0; border-radius: 6px; }
+.tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.card { position: relative; display: block; aspect-ratio: 488 / 680; border-radius: 4.6% / 3.3%; background: var(--surface); box-shadow: var(--shadow); overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
+.tile:hover .card, .tile:focus-visible .card { transform: translateY(-4px) scale(1.015); }
+.card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card img:not([src]) { visibility: hidden; }
+.foot .btn { padding: 4px 10px; font-size: 12.5px; margin-left: 10px; }
+.card.missing { display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; border: 1.5px dashed var(--line); box-shadow: none; color: var(--muted); font-size: 13px; }
+.card.missing b { display: block; color: var(--ink); font-family: var(--font-display); font-size: 1.25rem; line-height: 1.1; margin-bottom: 4px; }
+.qty { position: absolute; left: 8px; bottom: 8px; background: var(--accent); color: var(--accent-ink); font: 500 12.5px/1 var(--font-mono); padding: 5px 7px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.price { position: absolute; right: 8px; bottom: 8px; background: rgba(15,20,17,.8); color: #fff; font: 500 12px/1 var(--font-mono); padding: 5px 7px; border-radius: 6px; }
+.foilmark { position: absolute; right: 8px; top: 8px; background: rgba(15,20,17,.72); color: #fff; font: 600 10.5px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; border-radius: 5px; backdrop-filter: blur(2px); }
+.foilfx { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; mix-blend-mode: screen; opacity: .5;
+  background: linear-gradient(115deg, transparent 22%, rgba(255,255,255,.55) 34%, rgba(120,205,255,.4) 44%, rgba(255,150,225,.4) 54%, rgba(255,230,140,.35) 62%, transparent 74%);
+  background-size: 260% 100%; background-position: 100% 0; animation: shimmer 7s ease-in-out infinite; }
+@keyframes shimmer { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+.cap { display: block; margin-top: 8px; font-size: 13px; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
+.cap small { display: block; color: var(--muted); font-size: 12px; }
+.empty { padding: 56px 0; text-align: center; color: var(--muted); }
+
+footer.foot { padding-block: 0 36px; color: var(--muted); font-size: 12.5px; }
+
+dialog#lb, dialog#chk { border: 0; padding: 0; background: var(--surface); color: var(--ink); border-radius: 14px; width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 24px); box-shadow: 0 30px 80px rgba(0,0,0,.55); overflow: auto; }
+.chkwrap { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.chkwrap h2 { margin: 0; padding-right: 44px; font: 700 clamp(1.8rem, 4vw, 2.4rem)/1 var(--font-display); }
+.chkhint { margin: 0; color: var(--muted); max-width: 80ch; }
+.chkgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.chkgrid textarea { width: 100%; height: min(50vh, 420px); resize: vertical; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 400 13.5px/1.55 var(--font-mono); white-space: pre; overflow: auto; }
+.chkgrid textarea[readonly] { background: var(--surface); }
+.chkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+dialog#lb::backdrop,
+dialog#chk::backdrop { background: rgba(5,8,6,.72); backdrop-filter: blur(3px); }
+.lbgrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; padding: 22px; }
+.lbimg { position: relative; justify-self: center; width: 100%; max-width: 440px; aspect-ratio: 488 / 680; border-radius: 4.6% / 3.3%; overflow: hidden; background: var(--bg); box-shadow: var(--shadow); }
+.lbimg img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.lbinfo { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.lbinfo h2 { margin: 0; font: 700 clamp(1.8rem, 4vw, 2.5rem)/1 var(--font-display); text-wrap: balance; }
+.lbinfo .type { margin: 0; color: var(--muted); }
+.lbinfo dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+.lbinfo dt { color: var(--muted); font-size: 13px; }
+.lbinfo dd { margin: 0; font-family: var(--font-mono); font-size: 13.5px; overflow-wrap: anywhere; }
+.lbactions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+.lbactions a.btn { text-decoration: none; display: inline-block; }
+.lbclose { position: absolute; top: 8px; right: 8px; z-index: 2; width: 38px; height: 38px; padding: 0; border-radius: 50%; display: grid; place-items: center; font-size: 20px; line-height: 1; }
+
+.drop { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(10,14,11,.8); color: #fff; font: 600 clamp(1.6rem, 4vw, 2.4rem)/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; border: 3px dashed var(--accent); margin: 12px; border-radius: 16px; }
+.drop.on { display: flex; }
+
+@media (max-width: 720px) {
+  .lbgrid { grid-template-columns: 1fr; padding: 14px; gap: 16px; }
+  .chkgrid { grid-template-columns: minmax(0, 1fr); }
+  .chkwrap { padding: 14px; }
+  .spacer { display: none; }
+  .field select { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foilfx { animation: none; background-position: 40% 0; }
+  .card { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <div class="brand">
+    <h1>Kartenwand</h1>
+    <p class="lead">Deine Magic-Sammlung als Bilder. Kartendaten und Bilder kommen live von Scryfall. Nur die Karten-IDs aus der CSV werden dorthin gesendet, die Datei selbst bleibt auf deinem Rechner.</p>
+  </div>
+  <div class="loadbox">
+    <button class="btn primary" id="pick" type="button">CSV-Dateien laden</button>
+    <button class="btn" id="pickadd" type="button">Dateien hinzufügen</button>
+    <button class="btn" id="checkopen" type="button">Liste abgleichen</button>
+    <input id="file" type="file" accept=".csv,.txt,text/csv,text/plain" multiple hidden>
+    <input id="fileadd" type="file" accept=".csv,.txt,text/csv,text/plain" multiple hidden>
+    <span class="filename" id="fname"></span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap">
+    <label class="field"><span>Suche</span><input id="q" type="search" placeholder="Name oder Bemerkung" autocomplete="off"></label>
+    <label class="field" id="ffileWrap" hidden><span>Datei</span><select id="ffile"><option value="">Alle Dateien</option></select></label>
+    <label class="field"><span>Set</span><select id="fset"><option value="">Alle Sets</option></select></label>
+    <label class="field"><span>Seltenheit</span>
+      <select id="frar">
+        <option value="">Alle</option>
+        <option value="mythic">Mythisch</option>
+        <option value="rare">Selten</option>
+        <option value="uncommon">Ungewöhnlich</option>
+        <option value="common">Gewöhnlich</option>
+        <option value="special">Special / Bonus</option>
+      </select>
+    </label>
+    <label class="field"><span>Sortierung</span>
+      <select id="fsort">
+        <option value="csv">Reihenfolge der CSV</option>
+        <option value="name">Name A–Z</option>
+        <option value="qty">Anzahl absteigend</option>
+        <option value="set">Set und Nummer</option>
+        <option value="rarity">Seltenheit</option>
+        <option value="value">Wert absteigend</option>
+      </select>
+    </label>
+    <label class="field"><span>Größe</span><input id="ftile" type="range" min="110" max="380" step="10" value="200"></label>
+    <label class="check"><input id="ffoil" type="checkbox"> Nur Foil</label>
+    <label class="check"><input id="fnames" type="checkbox"> Namen</label>
+    <label class="check"><input id="fprice" type="checkbox" checked> Preise</label>
+    <label class="check" title="Jede CSV-Zeile als eigene Karte zeigen, statt gleiche Karten zusammenzufassen"><input id="frow" type="checkbox"> Zeilen einzeln</label>
+    <span class="spacer"></span>
+    <span class="count" id="count" aria-live="polite"></span>
+    <button class="btn" id="restore" type="button" hidden>Entfernte wiederherstellen</button>
+    <button class="btn" id="clearall" type="button">Alle entfernen</button>
+  </div>
+</div>
+
+<div class="wrap status" id="statusWrap" hidden>
+  <div class="box"><progress id="prog" max="1" value="0"></progress><span id="statusText"></span></div>
+</div>
+<div class="wrap status" id="imgWrap" hidden>
+  <div class="box"><progress id="iprog" max="1" value="0"></progress><span id="itext"></span></div>
+</div>
+<div class="wrap" id="errWrap" hidden><div class="error" id="err" role="alert"></div></div>
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden><span id="emptyText"></span></div>
+</main>
+
+<footer class="wrap foot">Kartendaten, Bilder und Preise: <a href="https://scryfall.com" target="_blank" rel="noopener" style="color:inherit">Scryfall</a>. Die Euro-Preise stammen von Cardmarket und sind nicht der Preis eines bestimmten Verkäufers. Magic: The Gathering ist eine Marke von Wizards of the Coast.<br><span id="imginfo"></span><button class="btn" id="imgclear" type="button" hidden>Bild-Speicher leeren</button></footer>
+
+<dialog id="lb" aria-label="Kartenansicht">
+  <button class="btn lbclose" id="lbclose" type="button" aria-label="Schließen">×</button>
+  <div class="lbgrid">
+    <div class="lbimg"><img id="lbimg" alt=""></div>
+    <div class="lbinfo">
+      <h2 id="lbname"></h2>
+      <p class="type" id="lbtype"></p>
+      <dl id="lbdl"></dl>
+      <div class="lbactions">
+        <button class="btn" id="lbprev" type="button">← Zurück</button>
+        <button class="btn" id="lbnext" type="button">Weiter →</button>
+        <button class="btn" id="lbflip" type="button" hidden>Rückseite zeigen</button>
+        <button class="btn" id="lbremove" type="button">Karte entfernen</button>
+        <a class="btn" id="lblink" href="#" target="_blank" rel="noopener">Auf Scryfall öffnen</a>
+        <a class="btn" id="lbcm" href="#" target="_blank" rel="noopener" hidden>Auf Cardmarket öffnen</a>      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="chk" aria-label="Liste abgleichen">
+  <button class="btn lbclose" id="chkclose" type="button" aria-label="Schließen">×</button>
+  <div class="chkwrap">
+    <h2>Liste abgleichen</h2>
+    <p class="chkhint">Füge Kartennamen ein, eine Karte pro Zeile. Rechts steht dieselbe Liste, bei Karten aus deiner Sammlung mit der Bemerkung dahinter. Zahlen am Zeilenanfang (2 Sol Ring) und Set-Angaben in Klammern werden beim Suchen ignoriert. Entfernte Karten zählen als nicht vorhanden.</p>
+    <div class="chkgrid">
+      <label class="field"><span>Deine Liste</span><textarea id="chkin" wrap="off" spellcheck="false" placeholder="Lightning Greaves&#10;2 Talisman of Indulgence&#10;Sol Ring"></textarea></label>
+      <label class="field"><span>Ergebnis</span><textarea id="chkout" wrap="off" spellcheck="false" readonly></textarea></label>
+    </div>
+    <div class="chkbar">
+      <span class="count" id="chksum" aria-live="polite"></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="chkcopy" type="button">Ergebnis kopieren</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="drop" id="drop">CSV-Dateien hier ablegen</div>
+
+<script type="text/plain" id="sample-csv">Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency
+,No Remark,Badgermole Cub (Borderless),TLA,Avatar: The Last Airbender,326,foil,mythic,1,be16c053-99e1-4921-8530-5135c989149d,0,false,false,NM,EN,EUR
+,No Remark,"The Theorist, Jace Beleren (Borderless) (0363)",FRA,Reality Fracture,363,foil,mythic,1,707f6fbb-94f6-459b-8a21-bec360b7b668,0,false,false,NM,EN,EUR
+,No Remark,"Shang-Chi, Master of Kung Fu (Borderless) (0396)",MSH,Marvel Super Heroes,0396,foil,mythic,1,b367d034-ae08-4b08-b090-39a6d4f79dc2,0,false,false,NM,EN,EUR
+,No Remark,"Codie, Ravenous Codex (Showcase) (Fracture Foil)",FRA,Reality Fracture,422,foil,mythic,1,53015f09-fcb8-448e-baf3-36524f4217a7,0,false,false,NM,EN,EUR
+,No Remark,Ajani Unrelenting (Borderless),FRA,Reality Fracture,308,foil,mythic,1,2b293d8f-7877-4212-af6b-e898d759d013,0,false,false,NM,EN,EUR
+,No Remark,Consign to Memory (Borderless),SPG,Special Guests,162,foil,mythic,1,ec9ffeac-ae49-465e-9dc5-976db8252fe6,0,false,false,NM,EN,EUR
+,No Remark,Ajani Resolute (Borderless),FRA,Reality Fracture,291,normal,mythic,1,96aec358-5f18-44c7-8223-a41c9d583961,0,false,false,NM,EN,EUR
+,No Remark,"Samut, Hazoret's Champion (Borderless)",FRA,Reality Fracture,311,foil,rare,1,f909fe3b-c349-4a19-90ad-aa51f8e73b66,0,false,false,NM,EN,EUR
+,No Remark,Liliana the Repentant (Borderless),FRA,Reality Fracture,305,foil,rare,2,ddefddbc-c769-4e53-a9b3-087578ae8bc0,0,false,false,NM,EN,EUR
+,No Remark,"Chandra, Chill of Compliance (Borderless)",FRA,Reality Fracture,297,normal,mythic,1,549cd466-d726-4ac9-a9e8-c1cd3ecda998,0,false,false,NM,EN,EUR
+,No Remark,Coat of Arms (2682),SLD,Secret Lair Drop Series,2682,foil,rare,1,e09f1823-f2b1-4fa2-8e8c-4a3bf0473a14,0,false,false,NM,EN,EUR
+,No Remark,Gardenize (Showcase) (0406),FRA,Reality Fracture,406,foil,mythic,1,1ed34863-2dca-444e-85ea-70f305b0d32a,0,false,false,NM,EN,EUR
+,No Remark,"Lathril, Blade of the Elves",SLD,Secret Lair Drop Series,2681,foil,rare,1,f7f00791-de5e-4f10-9931-8694afcd580c,0,false,false,NM,EN,EUR
+,No Remark,Dark Matter Manipulator (Showcase),FRA,Reality Fracture,340,foil,rare,1,5fd4f195-ee14-4aff-91b0-7ed5b552fd35,0,false,false,NM,EN,EUR
+,No Remark,Dark Matter Manipulator (Showcase),FRA,Reality Fracture,340,normal,rare,1,5fd4f195-ee14-4aff-91b0-7ed5b552fd35,0,false,false,NM,EN,EUR
+,R1-004-N,"Aurelia, the Warleader",GTC,Gatecrash,143,normal,mythic,3,4ec18e35-05e4-4bfc-b32b-c3e71c95a71d,0,false,false,NM,DE,EUR
+,No Remark,Return to the Light Realms (Borderless) (0323),FRA,Reality Fracture,323,normal,mythic,1,c0d25cd5-1977-4303-b83c-0dd415c13077,0,false,false,NM,EN,EUR
+,No Remark,Dark Matter Manipulator,FRA,Reality Fracture,52,normal,rare,1,4ec912d5-cbe7-4d07-9ece-b03ac02d3055,0,false,false,NM,DE,EUR
+,No Remark,Chancellor of the Tangle,NPH,New Phyrexia,106,foil,rare,1,6d129aa8-b637-451e-8123-5221e08cc2cc,0,false,false,NM,EN,EUR
+,B1R1,Krark-Clan Shaman,MRD,Mirrodin,98,normal,common,6,975f9ea8-af2c-456f-acd0-ffa9ea0d98c1,0,false,false,NM,DE,EUR
+,No Remark,"Thranduil, the Elvenking (Borderless)",HOB,The Hobbit,246,normal,rare,1,a416ca91-e646-40b4-824c-24aed6b9c683,0,false,false,NM,EN,EUR
+,R1-004-N,Blood Moon,MMA,Modern Masters,106,normal,rare,2,310647b0-54a4-4c0a-acdd-5e8e91972a87,0,false,false,NM,EN,EUR
+,R1-004-N,"Eiganjo, Seat of the Empire",NEO,Kamigawa: Neon Dynasty,268,normal,rare,1,c375a022-5b57-496d-a802-e4ea8376e9e4,0,false,false,NM,DE,EUR
+,R1-004-N,Embercleave,PPELD,Promo Pack: Throne of Eldraine,120,normal,mythic,1,3e0838ff-8eb1-40ef-aee9-97cc52b5b8e0,0,false,false,NM,DE,EUR
+,No Remark,Lich's Relic (Borderless),FRA,Reality Fracture,365,foil,rare,1,b66b0007-e973-4854-ac84-b1017b14186c,0,false,false,NM,EN,EUR
+,No Remark,"Garruk, Veiled Butcher (Borderless)",FRA,Reality Fracture,303,foil,mythic,1,9efdedea-c9a4-4085-9da9-4293200b99e0,0,false,false,NM,EN,EUR
+,R1-004-N,Norin the Wary,TSP,Time Spiral,171,normal,rare,1,f61ea59a-1db0-4e6b-bcde-19787c76a49b,0,false,false,NM,DE,EUR
+,No Remark,Counterbalance (2066) (Rainbow Foil),SLD,Secret Lair Drop Series,2066,foil,rare,1,3fd8a7bf-c679-470a-8e56-d3f59b7ba488,0,false,false,NM,EN,EUR
+,No Remark,The Ooze,TMT,Teenage Mutant Ninja Turtles,177,normal,rare,1,1f9bd4da-4626-40ba-95f4-14e3de36f989,0,false,false,NM,DE,EUR
+,No Remark,"Kambal, Profiteering Mayor",OTJ,Outlaws of Thunder Junction,211,normal,rare,1,d53a775d-5898-41a8-b404-9b7d4721c6ba,0,false,false,NM,EN,EUR
+,No Remark,"Samut, Tyrant of Naktamun (Borderless)",FRA,Reality Fracture,302,normal,rare,2,7081f960-3476-4acd-8272-600c1e50b560,0,false,false,NM,EN,EUR
+,No Remark,Draconic Visitor (Borderless),FRA,Reality Fracture,368,normal,rare,1,d061676d-093a-47ac-9064-3edcacbc4485,0,false,false,NM,EN,EUR
+,B1R1,Fabricate,MRD,Mirrodin,35,normal,uncommon,4,a742e23c-1991-4dce-b670-dea92a1cf4ec,0,false,false,NM,EN,EUR
+,B1R1,Fabricate,MRD,Mirrodin,35,normal,uncommon,1,a742e23c-1991-4dce-b670-dea92a1cf4ec,0,false,false,NM,DE,EUR
+,R1-004-N,Flusterstorm,IMA,Iconic Masters,55,normal,rare,1,f900eeb7-7c45-44bc-ad3a-0bbe594ecf50,0,false,false,NM,EN,EUR
+,B1R1,Freed from the Real,SOK,Saviors of Kamigawa,38,normal,common,2,e9ecee02-12c0-4aed-a679-41bce95e0cda,0,false,false,NM,DE,EUR
+,No Remark,Radagast of Rhosgobel (Extended Art),HOB,The Hobbit,309,normal,rare,1,3ea01785-add0-487d-b708-5bbf71033899,0,false,false,NM,EN,EUR
+,B1R1,Seething Song,MRD,Mirrodin,104,normal,common,5,9213d580-7953-455f-abbe-99d3db2705cf,0,false,false,NM,DE,EUR
+,B1R1,Lightning Greaves,MRD,Mirrodin,199,normal,uncommon,6,61a28870-cf78-4323-9d82-cee764067764,0,false,false,NM,DE,EUR
+,B1R1,Lightning Greaves,MRD,Mirrodin,199,normal,uncommon,1,61a28870-cf78-4323-9d82-cee764067764,0,false,false,NM,EN,EUR
+,R1-004-N,Drana and Linvala,MOM,March of the Machine,222,normal,rare,1,bbda000f-3cf7-48b6-96ff-c23a3a64eab5,0,false,false,NM,EN,EUR
+,No Remark,"Gollum, Riddle Master",HOB,The Hobbit,70,foil,mythic,1,bbdc7e37-c65a-497a-92b7-a30a6e369c71,0,false,false,NM,EN,EUR
+,R1-004-N,Grafdigger's Cage,M20,Core Set 2020,227,normal,rare,1,0a135e09-b534-4836-9a10-3a9a4a9f8c53,0,false,false,NM,DE,EUR
+,R1-004-N,Whispering Madness,GTC,Gatecrash,207,normal,rare,2,64e4b0cc-e611-4a4b-8392-b37bfc3a77e1,0,false,false,NM,DE,EUR
+,No Remark,Simulacrum Shaper (Borderless),FRA,Reality Fracture,332,normal,rare,1,071ed239-6875-4090-94b3-56b246a9407b,0,false,false,NM,DE,EUR
+,B1R1,Vault of Whispers,MRD,Mirrodin,286,normal,common,2,73866487-33f4-4f64-b100-2c4ddadcd74e,0,false,false,NM,DE,EUR
+,No Remark,"Lyra, Archangel of Dawn (Borderless)",FRA,Reality Fracture,294,normal,rare,1,fc4635a1-1497-4643-b3e5-954808b07a54,0,false,false,NM,EN,EUR
+,No Remark,Cultivate (2679),SLD,Secret Lair Drop Series,2679,foil,rare,1,2b7f7699-caf5-4fc8-a4e5-13a3d992639d,0,false,false,NM,EN,EUR
+,B1R1,Great Furnace,MRD,Mirrodin,282,normal,common,1,2877281d-c85d-4f32-b40d-828b93c4ee8e,0,false,false,NM,EN,EUR
+,No Remark,Verdant Kraken,FRA,Reality Fracture,118,normal,rare,1,2bb7a8eb-227f-410b-859f-750ef0aea2f0,0,false,false,NM,EN,EUR
+,No Remark,"Omnath, Locus of the Void (Extended Art)",FRC,Commander: Reality Fracture,88,normal,rare,1,6183342b-7dce-49e1-a1c3-bdadbeeabbd3,0,false,false,NM,EN,EUR
+,B1R1,Thoughtcast,MRD,Mirrodin,54,normal,common,1,efb965a7-877a-4302-b507-25b0a9e32d9b,0,false,false,NM,EN,EUR
+,B1R1,Ancient Den,MRD,Mirrodin,278,normal,common,1,cc857fbd-8e0f-4bff-8f14-561c9925c484,0,false,false,NM,DE,EUR
+,B1R1,Ancient Den,MRD,Mirrodin,278,normal,common,2,cc857fbd-8e0f-4bff-8f14-561c9925c484,0,false,false,NM,EN,EUR
+,No Remark,Plains (0317) (Surge Foil),HOB,The Hobbit,317,foil,land,1,3550f914-cacb-4849-af06-1a7b25c2c95f,0,false,false,NM,EN,EUR
+,No Remark,Plains (0320) (Surge Foil),HOB,The Hobbit,320,foil,land,1,128226f4-a733-4f0a-ab2b-7789cfa8b443,0,false,false,NM,EN,EUR
+,No Remark,Plains (0319) (Surge Foil),HOB,The Hobbit,319,foil,land,1,46c75f8e-6590-4338-abbd-a37e08dbd58c,0,false,false,NM,EN,EUR
+,No Remark,"Lyra, Archangel of Dawn",FRA,Reality Fracture,201,normal,rare,1,86a3866e-68a8-402c-baf0-1908e98e3995,0,false,false,NM,DE,EUR
+,R1-004-N,"Kataki, War's Wage",MMA,Modern Masters,20,normal,rare,1,4d84ac44-01d8-415e-af69-7c608ac8ae20,0,false,false,NM,EN,EUR
+,R1-004-N,Panglacial Wurm,CSP,Coldsnap,116,normal,rare,1,063bb28b-5e32-4f31-a208-16b653edf413,0,false,false,NM,DE,EUR
+,No Remark,Plains (0318) (Surge Foil),HOB,The Hobbit,318,foil,land,1,f82548c7-24ed-4529-8b57-7407dc0b8c8b,0,false,false,NM,EN,EUR
+,No Remark,Loyal Tutor,FRA,Reality Fracture,14,normal,rare,1,490dae91-94ce-42a9-a11f-6c5e77c4e486,0,false,false,NM,DE,EUR
+,B1R1,Locust Miser,SOK,Saviors of Kamigawa,80,normal,uncommon,1,55bf4dda-0ce8-4e35-88d9-18a22400e6cb,0,false,false,NM,DE,EUR
+,B1R1,Locust Miser,SOK,Saviors of Kamigawa,80,normal,uncommon,3,55bf4dda-0ce8-4e35-88d9-18a22400e6cb,0,false,false,NM,EN,EUR
+,R1-004-N,Vault of the Archangel,DKA,Dark Ascension,158,normal,rare,1,35a65437-430a-42ef-854f-6e66f8e1a04a,0,false,false,NM,EN,EUR
+,No Remark,"Ob Nixilis, the Ascended (Extended Art)",FRC,Commander: Reality Fracture,90,normal,rare,1,c889f089-423b-4b36-b1ca-8ccc7485d144,0,false,false,NM,EN,EUR
+,B1R1,Talisman of Indulgence,MRD,Mirrodin,255,normal,uncommon,7,e14011b3-56ce-4b93-833f-d8403809159c,0,false,false,NM,DE,EUR
+,B1R1,Talisman of Indulgence,MRD,Mirrodin,255,normal,uncommon,5,e14011b3-56ce-4b93-833f-d8403809159c,0,false,false,NM,EN,EUR
+,B1R1,Sakura-Tribe Scout,SOK,Saviors of Kamigawa,144,normal,common,9,9cbdda50-8a27-4094-849d-b6f66def82ce,0,false,false,NM,DE,EUR
+,B1R1,Sakura-Tribe Scout,SOK,Saviors of Kamigawa,144,normal,common,14,9cbdda50-8a27-4094-849d-b6f66def82ce,0,false,false,NM,EN,EUR
+,No Remark,Gardenize (Showcase) (0345),FRA,Reality Fracture,345,foil,rare,1,c60d4862-9615-4522-8724-489065d6ef6b,0,false,false,NM,EN,EUR
+,No Remark,Island (Borderless) (0385),FRA,Reality Fracture,385,foil,land,3,bc4cd881-9c34-4cf9-8afe-050e803f34a6,0,false,false,NM,EN,EUR
+,No Remark,"Jace, Reality Sculptor (Borderless)",FRA,Reality Fracture,300,normal,rare,1,dafe1979-fda7-4164-a362-b9f789f25710,0,false,false,NM,EN,EUR
+,R1-004-N,Sanity Grinding,EVE,Eventide,29,normal,rare,1,7d3e377f-6bb7-4fa1-b58b-7e2af06ca4b7,0,false,false,NM,EN,EUR
+,No Remark,"Jace, Reality Sculptor",FRA,Reality Fracture,216,foil,rare,1,74087795-0b38-4fd2-9841-147583baca41,0,false,false,NM,EN,EUR
+,No Remark,Dramatic Reversal,30A-P,30th Anniversary Promos,24,foil,promo,1,5a5e1516-c2cf-4535-a6dc-42a5f3544d88,0,false,false,NM,EN,EUR
+,R1-004-N,Mirage Mirror,HOU,Hour of Devastation,165,normal,rare,5,29148d7e-b398-4e19-a29e-d9a660ad5016,0,false,false,NM,EN,EUR
+,No Remark,Island (Borderless) (0386),FRA,Reality Fracture,386,foil,land,4,6ff3f00e-4ec2-41ef-bd19-fa830480245d,0,false,false,NM,EN,EUR
+,R1-004-N,Sire of Insanity,DGM,Dragon's Maze,104,normal,rare,2,3665cfb7-51b6-4083-8eae-fbd3fa6c3554,0,false,false,NM,EN,EUR
+,No Remark,Ajani's Anguish (Borderless),FRA,Reality Fracture,367,normal,rare,1,e0bad302-16af-48c9-a33b-2def7daf527d,0,false,false,NM,EN,EUR
+,R1-004-N,Ammit Eternal,HOU,Hour of Devastation,57,normal,rare,1,1b04934f-87d1-4768-b7b5-5f7249a09771,0,false,false,NM,DE,EUR
+,No Remark,Island (Borderless) (0387),FRA,Reality Fracture,387,foil,land,3,b256a981-ba4b-43b9-83a3-f31a105a2c26,0,false,false,NM,EN,EUR
+,B1R1,Talisman of Progress,MRD,Mirrodin,256,normal,uncommon,3,41ff849e-2439-4690-8aa4-769039b6da4c,0,false,false,NM,EN,EUR
+,B1R1,Talisman of Progress,MRD,Mirrodin,256,normal,uncommon,1,41ff849e-2439-4690-8aa4-769039b6da4c,0,false,false,NM,DE,EUR
+,R1-004-N,Prime Speaker Zegana,GTC,Gatecrash,188,normal,mythic,1,f30dfb8e-f540-45ab-a4e8-63425099646a,0,false,false,NM,DE,EUR
+,No Remark,"Jace, Multiverse Architect (Borderless)",FRC,Commander: Reality Fracture,1,normal,mythic,1,55cd03d9-2535-4cf3-a8b2-1418e1190f4a,0,false,false,NM,EN,EUR
+,No Remark,"Karn, Argent Defender",FRA,Reality Fracture,279,normal,rare,1,1ebbbddb-2dc3-4194-b72b-13bcebe2ab89,0,false,false,NM,EN,EUR
+,R1-004-N,"Ruric Thar, the Unbowed",DGM,Dragon's Maze,99,normal,rare,2,84dd3586-7c3b-4f9c-a1eb-7745b75339b0,0,false,false,NM,DE,EUR
+,No Remark,Vraska's Final Mercy,FRA,Reality Fracture,71,foil,rare,1,992bd991-7cfb-459f-bafd-9a44f3c925c5,0,false,false,NM,EN,EUR
+,R1-004-N,Signal the Clans,GTC,Gatecrash,194,normal,rare,3,34261992-db62-49e3-95bc-1b2960868de4,0,false,false,NM,DE,EUR
+,No Remark,Mountain (0197),HOB,The Hobbit,197,foil,land,1,51acfb01-4b0b-48fc-9704-a9b4a1e43a23,0,false,false,NM,EN,EUR
+,B1R1,Talisman of Impulse,MRD,Mirrodin,254,normal,uncommon,9,a00b65f7-70d0-4bbd-ac13-be24cc3374ee,0,false,false,NM,DE,EUR
+,B1R1,Talisman of Impulse,MRD,Mirrodin,254,normal,uncommon,4,a00b65f7-70d0-4bbd-ac13-be24cc3374ee,0,false,false,NM,EN,EUR
+,No Remark,"Vraska, the Cutting Glare (Borderless)",FRA,Reality Fracture,319,normal,rare,1,9e80737c-c228-4a69-acd8-c8bb2f6d8bd0,0,false,false,NM,DE,EUR
+,No Remark,"Lyra, Tolarian Archangel (Borderless)",FRA,Reality Fracture,301,normal,rare,1,06796f03-18d4-4286-ab77-3cd9aa517090,0,false,false,NM,EN,EUR
+,B1R1,Talisman of Unity,MRD,Mirrodin,257,normal,uncommon,10,d6cc8a5a-b98b-4758-a168-bf2ef738fb05,0,false,false,NM,DE,EUR
+,B1R1,Talisman of Unity,MRD,Mirrodin,257,normal,uncommon,2,d6cc8a5a-b98b-4758-a168-bf2ef738fb05,0,false,false,NM,EN,EUR
+,No Remark,Plains (0194),HOB,The Hobbit,194,foil,land,1,24dc369c-020a-4115-a4bb-d60a44de64e3,0,false,false,NM,EN,EUR
+,R1-004-N,Biovisionary,GTC,Gatecrash,146,normal,rare,4,2000b4e8-7887-454e-9d52-211516613dd0,0,false,false,NM,EN,EUR
+,No Remark,Germinate Recruits,FRA,Reality Fracture,9,foil,rare,1,1b5d7d19-b32a-4786-ae9a-00da5e6658ad,0,false,false,NM,EN,EUR
+,No Remark,Swamp (0196),HOB,The Hobbit,196,foil,land,1,c5f590a3-9993-4ac4-a93c-1beb44eda17b,0,false,false,NM,EN,EUR
+,R1-004-N,"Exava, Rakdos Blood Witch",DGM,Dragon's Maze,69,normal,rare,3,6cb72a64-89e7-4b0e-a3d3-1309829071d2,0,false,false,NM,EN,EUR
+,No Remark,Cruel Calculations (Showcase),FRA,Reality Fracture,336,foil,rare,1,8bdd99c6-d0f1-4922-ada8-0c4566860e15,0,false,false,NM,EN,EUR
+,No Remark,Cruel Calculations (Showcase),FRA,Reality Fracture,336,normal,rare,1,8bdd99c6-d0f1-4922-ada8-0c4566860e15,0,false,false,NM,EN,EUR
+,No Remark,Identity Echo,FRA,Reality Fracture,87,normal,rare,1,e600b33b-8916-43dd-95d3-d7cbf874933d,0,false,false,NM,EN,EUR
+,No Remark,Island (0195),HOB,The Hobbit,195,foil,land,1,739aaaac-c424-4ea7-a084-62a6fc0438b0,0,false,false,NM,EN,EUR
+,No Remark,Solarium Sentry,FRA,Reality Fracture,148,foil,rare,1,1ef12dcf-df50-4da6-8c4c-e2937ba9698e,0,false,false,NM,EN,EUR
+,R1-004-N,Firemane Avenger,GR1,Guilds of Ravnica: Guild Kits,89,normal,rare,1,9a78e99c-b517-44ff-9291-6c828ac8469f,0,false,false,NM,EN,EUR
+,No Remark,Face Yourself (Borderless),FRA,Reality Fracture,370,normal,rare,1,68930b71-d96e-4e08-9547-7f8160d7ab73,0,false,false,NM,EN,EUR
+,R1-004-N,Spirit of the Hearth,EVE,Eventide,14,normal,rare,1,667cf0b6-1dd9-420a-abf8-f6a698aafea7,0,false,false,NM,DE,EUR
+,No Remark,"Jhoira, Weatherlight Corsair (Extended Art)",FRC,Commander: Reality Fracture,93,normal,rare,1,116dc6fb-cfa4-4bc6-b897-95dd0ee0a642,0,false,false,NM,EN,EUR
+,R1-004-N,Savageborn Hydra,DGM,Dragon's Maze,100,normal,mythic,2,2f2b73cd-6179-4885-9d92-1782d0b492c1,0,false,false,NM,DE,EUR
+,No Remark,Extrapolate the Impossible (Borderless),FRA,Reality Fracture,364,normal,rare,1,a20f408a-87b2-4ee3-a1b1-520b38f54d9e,0,false,false,NM,EN,EUR
+,R1-004-N,Endless Sands,HOU,Hour of Devastation,176,normal,rare,6,9ebd3e0a-30cc-4bc1-b9fa-6d65db9a6f5b,0,false,false,NM,EN,EUR
+,R1-004-N,Mangara of Corondor,TSP,Time Spiral,28,normal,rare,2,a785b66c-c5a4-4520-a9fa-aa199f7f56e5,0,false,false,NM,DE,EUR
+,No Remark,Hungering Puppetbeast (Showcase),FRA,Reality Fracture,346,foil,rare,1,3cee6c29-e9ab-4e86-8fc9-9b9c287ffdfd,0,false,false,NM,EN,EUR
+,R1-004-N,Greater Gargadon,TSP,Time Spiral,161,normal,rare,2,653ddfa0-2088-4503-a3ab-b0f1d55d8351,0,false,false,NM,DE,EUR
+,R1-004-N,Greater Gargadon,TSP,Time Spiral,161,normal,rare,1,653ddfa0-2088-4503-a3ab-b0f1d55d8351,0,false,false,NM,EN,EUR
+,R1-004-N,Jester's Scepter,CSP,Coldsnap,137,normal,rare,2,7118c2e0-04d6-4a71-8ffd-b9365b154050,0,false,false,NM,EN,EUR
+,R1-004-N,Jester's Scepter,CSP,Coldsnap,137,normal,rare,1,7118c2e0-04d6-4a71-8ffd-b9365b154050,0,false,false,NM,DE,EUR
+,No Remark,Stinging Vitriol,FRA,Reality Fracture,152,foil,rare,1,a7d78297-7411-4ec5-8931-a25146869d5b,0,false,false,NM,EN,EUR
+,No Remark,Stinging Vitriol,FRA,Reality Fracture,152,normal,rare,1,a7d78297-7411-4ec5-8931-a25146869d5b,0,false,false,NM,DE,EUR
+,No Remark,Annul,PPEOE,Promo Pack: Edge of Eternities,394,normal,promo,1,26dd02c4-569b-437f-b9dd-bd2f1d86a968,0,false,false,NM,EN,EUR
+,No Remark,Frostbite Pyromental (Borderless),FRA,Reality Fracture,333,normal,rare,1,79ff0b78-c220-4940-8957-77cf4fd820e2,0,false,false,NM,EN,EUR
+,R1-004-N,Trait Doctoring,DGM,Dragon's Maze,18,normal,rare,8,e21a7981-5940-4b75-907f-7600a742f946,0,false,false,NM,EN,EUR
+,R1-004-N,"Melek, Izzet Paragon",DGM,Dragon's Maze,84,normal,rare,1,3e892d86-f443-4846-8049-40ec6b8c22b4,0,false,false,NM,EN,EUR
+,R1-004-N,Imperial Mask,FUT,Future Sight,23,normal,rare,1,bb02f692-80a9-4740-afde-cb4792d24774,0,false,false,NM,DE,EUR
+,R1-004-N,Blood Scrivener,DGM,Dragon's Maze,22,normal,rare,6,9ea8179a-d3c9-4cdc-a5b5-68cc73279050,0,false,false,NM,DE,EUR
+,R1-004-N,Blood Scrivener,DGM,Dragon's Maze,22,normal,rare,5,9ea8179a-d3c9-4cdc-a5b5-68cc73279050,0,false,false,NM,EN,EUR
+,No Remark,Stinging Vitriol (Showcase),FRA,Reality Fracture,356,normal,rare,1,71fd89cc-bf57-4b6d-a788-b4c91b3db044,0,false,false,NM,EN,EUR
+,No Remark,Variable Chaser,FRA,Reality Fracture,47,foil,rare,1,e3afedb1-bf9d-4e31-9700-433514cc29b1,0,false,false,NM,EN,EUR
+,No Remark,Tenured Tethermage,FRA,Reality Fracture,154,foil,rare,1,1703306d-6a3d-4ab8-bf58-a9992236ef0f,0,false,false,NM,EN,EUR
+,No Remark,Tenured Tethermage,FRA,Reality Fracture,154,normal,rare,1,1703306d-6a3d-4ab8-bf58-a9992236ef0f,0,false,false,NM,DE,EUR
+,R1-004-N,Vesuvan Shapeshifter,TSP,Time Spiral,90,normal,rare,1,458031cc-238d-45f0-9a81-b52e82286e0f,0,false,false,NM,DE,EUR
+,No Remark,Extrapolate the Impossible,FRA,Reality Fracture,55,foil,rare,1,17fb6538-493c-41aa-ad13-3e63d3ad3317,0,false,false,NM,EN,EUR
+,No Remark,Proctor of Potential,FRA,Reality Fracture,145,foil,rare,1,cf0eec8c-0475-4050-8144-481a9bb13a0f,0,false,false,NM,EN,EUR
+,No Remark,Sear,PPECL,Promo Pack: Lorwyn Eclipsed,405,normal,promo,1,0a13f8e0-8b23-4553-ad76-9e52f8d4c63c,0,false,false,NM,EN,EUR
+,R1-004-N,Firemane Avenger,GTC,Gatecrash,163,normal,rare,1,e244c198-efdc-492a-9c52-76aac006de9d,0,false,false,NM,DE,EUR
+,R1-004-N,God-Pharaoh's Gift,HOU,Hour of Devastation,161,normal,rare,4,b2e85a9e-4c37-4721-b7ea-de3413ec39df,0,false,false,NM,EN,EUR
+,No Remark,Entrust the Spark (Showcase),FRA,Reality Fracture,350,normal,rare,2,cec7b201-e3c4-4bde-bfc1-0049be22b890,0,false,false,NM,EN,EUR
+,R1-004-N,Renounce the Guilds,DGM,Dragon's Maze,5,normal,rare,1,bc9acc14-24e0-4c03-a09a-2afee351f2cc,0,false,false,NM,DE,EUR
+,R1-004-N,Renounce the Guilds,DGM,Dragon's Maze,5,normal,rare,1,bc9acc14-24e0-4c03-a09a-2afee351f2cc,0,false,false,NM,EN,EUR
+,R1-004-N,Apocalypse Demon,HOU,Hour of Devastation,58,normal,rare,2,39dfbf99-55e8-468b-bcd9-9179cad7cab6,0,false,false,NM,EN,EUR
+,No Remark,Face Yourself,FRA,Reality Fracture,83,normal,rare,1,3ccf8f64-19bd-4fdf-b70a-30a042bacf2f,0,false,false,NM,DE,EUR
+,No Remark,Hungering Puppetbeast,FRA,Reality Fracture,107,foil,rare,1,3db2da7a-8088-4117-916b-f9c905d1b45b,0,false,false,NM,EN,EUR
+,No Remark,The Misty Mountains Cold,UMP,Unique and Miscellaneous Promos,321,foil,promo,1,1aaf8a8a-1032-4ee5-9c18-2debb40ec561,0,false,false,NM,EN,EUR
+,R1-004-N,Verdant Embrace,TSP,Time Spiral,232,normal,rare,2,3dd1d130-98e7-4898-9f13-2bb58fa4777b,0,false,false,NM,DE,EUR
+,No Remark,Puppet Crafting (Borderless),FRA,Reality Fracture,373,normal,rare,1,15126d14-3737-4377-8476-e5f05a54fc77,0,false,false,NM,EN,EUR
+,No Remark,Repurposed Enforcer (Showcase),FRA,Reality Fracture,335,normal,rare,2,ac0bd1be-36cb-483f-9c47-2714e534cb6c,0,false,false,NM,EN,EUR
+,R1-004-N,Hostile Desert,HOU,Hour of Devastation,178,normal,rare,1,250c35cb-77e7-4600-a915-ccf327fe3385,0,false,false,NM,DE,EUR
+,R1-004-N,Hostile Desert,HOU,Hour of Devastation,178,normal,rare,2,250c35cb-77e7-4600-a915-ccf327fe3385,0,false,false,NM,EN,EUR
+,R1-004-N,Wildfire Eternal,HOU,Hour of Devastation,109,normal,rare,2,fd845479-619a-4262-b445-d93975c183b4,0,false,false,NM,DE,EUR
+,R1-004-N,Take Possession,FUT,Future Sight,44,normal,rare,1,78366049-4613-4cd1-aab0-308996926563,0,false,false,NM,EN,EUR
+,No Remark,Tenured Tethermage (Showcase),FRA,Reality Fracture,357,normal,rare,1,6ae471aa-74c3-416b-a884-bcf1bb2f6004,0,false,false,NM,EN,EUR
+,No Remark,"Codie, Ravenous Codex (Extended Art)",FRA,Reality Fracture,431,normal,rare,2,1ad53db3-57e2-416d-907d-a71f63009c06,0,false,false,NM,EN,EUR
+,R1-004-N,Scion of Vitu-Ghazi,DGM,Dragon's Maze,7,normal,rare,4,3cd20865-0a9a-4a72-92f9-77c8d6384b46,0,false,false,NM,EN,EUR
+,R1-004-N,Dragonshift,DGM,Dragon's Maze,66,normal,rare,1,6c046e4e-810c-4123-bb1a-4f97e0cd43d1,0,false,false,NM,DE,EUR
+,No Remark,Possibility Technician,EOE,Edge of Eternities,153,normal,rare,1,4b146c78-403f-48c8-941d-41114498bb89,0,false,false,NM,EN,EUR
+,No Remark,Null Summoner (Showcase),FRA,Reality Fracture,353,foil,rare,1,fc488525-de0b-4a52-8a1a-6ee4e798474e,0,false,false,NM,EN,EUR
+,No Remark,Diviner of Victory (Extended Art),FRA,Reality Fracture,425,normal,rare,1,83582080-bbd8-421e-80d3-66a7144f03fd,0,false,false,NM,EN,EUR</script>
+<script>
+//#PURE-START
+function normCn(s) { return String(s || '').trim().toLowerCase().replace(/^0+(?=\d)/, ''); }
+function baseName(n) { return String(n || '').replace(/\s*\([^)]*\)/g, '').trim(); }
+function isFoil(v) { return !['', 'normal', 'nonfoil', 'non-foil', 'false', 'no', '0', 'n'].includes(String(v || '').trim().toLowerCase()); }
+
+function parseCSV(text) {
+  text = String(text).replace(/^﻿/, '');
+  const first = text.split(/\r?\n/, 1)[0] || '';
+  const commas = (first.match(/,/g) || []).length, semis = (first.match(/;/g) || []).length, tabs = (first.match(/\t/g) || []).length;
+  const delim = tabs > commas && tabs > semis ? '\t' : (semis > commas ? ';' : ',');
+  const rows = []; let row = [], f = '', q = false;
+  const endRow = () => { row.push(f); f = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = []; };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; endRow(); }
+    else f += c;
+  }
+  if (f !== '' || row.length) endRow();
+  return rows;
+}
+
+const ALIASES = {
+  id: ['scryfall id', 'scryfall_id', 'scryfallid', 'id'],
+  name: ['name', 'card name', 'card', 'cardname'],
+  set: ['set code', 'set_code', 'set', 'edition code', 'edition'],
+  cn: ['collector number', 'collector_number', 'card number', 'number', 'cn'],
+  qty: ['quantity', 'count', 'qty', 'amount'],
+  foil: ['foil', 'finish'],
+  lang: ['language', 'lang'],
+  remark: ['binder type', 'remark', 'remarks', 'bemerkung', 'bemerkungen', 'notes', 'note'],
+  binder: ['binder name', 'binder', 'ordner']
+};
+function isNoRemark(s) { return !s || /^no remark$/i.test(String(s).trim()); }
+function detectColumns(header) {
+  const h = header.map(x => x.trim().toLowerCase()), col = {};
+  for (const [k, list] of Object.entries(ALIASES)) {
+    col[k] = -1;
+    for (const a of list) { const i = h.indexOf(a); if (i >= 0) { col[k] = i; break; } }
+  }
+  return col;
+}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function buildRows(table) {
+  if (!table.length) throw new Error('Die Datei ist leer.');
+  const col = detectColumns(table[0]);
+  if (col.id < 0 && col.name < 0 && !(col.set >= 0 && col.cn >= 0)) {
+    throw new Error('In der Kopfzeile fehlt eine Spalte mit Scryfall ID, Name oder Set code und Collector number.');
+  }
+  const out = [];
+  for (let r = 1; r < table.length; r++) {
+    const t = table[r], g = i => i >= 0 ? String(t[i] == null ? '' : t[i]).trim() : '';
+    const rawId = g(col.id).toLowerCase(), id = UUID.test(rawId) ? rawId : '';
+    const name = g(col.name), set = g(col.set).toLowerCase(), cn = normCn(g(col.cn));
+    if (!id && !name && !(set && cn)) continue;
+    let qty = parseInt(g(col.qty), 10);
+    if (!Number.isFinite(qty)) qty = 1;
+    if (qty <= 0) continue;
+    out.push({ order: out.length, id, name, set, cn, qty, foil: isFoil(g(col.foil)), lang: g(col.lang).toUpperCase(), remark: g(col.remark), binder: g(col.binder) });
+  }
+  return out;
+}
+function groupKey(r) { return r.id || (r.set && r.cn ? 'sc|' + r.set + '|' + r.cn : 'n|' + baseName(r.name).toLowerCase()); }
+function newGroup(r, k) { return { key: k, order: r.order, qty: 0, foilQty: 0, langs: [], name: r.name, set: r.set, cn: r.cn, id: r.id, remarkQty: {}, binders: [], fileQty: {}, fileFoil: {} }; }
+function addRow(g, r) {
+  g.qty += r.qty;
+  if (r.foil) g.foilQty += r.qty;
+  if (r.lang && !g.langs.includes(r.lang)) g.langs.push(r.lang);
+  if (!isNoRemark(r.remark)) g.remarkQty[r.remark] = (g.remarkQty[r.remark] || 0) + r.qty;
+  if (r.binder && !g.binders.includes(r.binder)) g.binders.push(r.binder);
+  if (r.file) {
+    g.fileQty[r.file] = (g.fileQty[r.file] || 0) + r.qty;
+    if (r.foil) g.fileFoil[r.file] = (g.fileFoil[r.file] || 0) + r.qty;
+  }
+}
+function groupRows(rows, perRow) {
+  if (perRow) return rows.map(r => { const g = newGroup(r, groupKey(r)); addRow(g, r); return g; });
+  const m = new Map();
+  for (const r of rows) {
+    const k = groupKey(r);
+    let g = m.get(k);
+    if (!g) { g = newGroup(r, k); m.set(k, g); }
+    addRow(g, r);
+  }
+  return [...m.values()];
+}
+function identifierFor(g) {
+  if (g.id) return { id: g.id };
+  if (g.set && g.cn) return { set: g.set, collector_number: g.cn };
+  return { name: baseName(g.name) };
+}
+function slim(c) {
+  const faces = Array.isArray(c.card_faces) ? c.card_faces : [];
+  let img = [];
+  if (c.image_uris) img = [{ n: c.image_uris.normal, l: c.image_uris.large || c.image_uris.normal }];
+  else img = faces.filter(f => f.image_uris).map(f => ({ n: f.image_uris.normal, l: f.image_uris.large || f.image_uris.normal }));
+  const pr = c.prices || {}, num = v => (v == null || v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
+  return { id: c.id, name: c.name, set: c.set, setName: c.set_name, cn: c.collector_number, rarity: c.rarity, type: c.type_line || (faces[0] && faces[0].type_line) || '', img, uri: c.scryfall_uri,
+    pe: num(pr.eur), pf: num(pr.eur_foil), cm: (c.purchase_uris && c.purchase_uris.cardmarket) || '', t: Date.now() };
+}
+function unitPrices(c) {
+  if (!c) return { n: null, f: null };
+  const n = c.pe != null ? c.pe : c.pf, f = c.pf != null ? c.pf : c.pe;
+  return { n: n == null ? null : n, f: f == null ? null : f };
+}
+function groupValue(g, c) {
+  const p = unitPrices(c);
+  if (p.n == null && p.f == null) return null;
+  return (g.qty - g.foilQty) * (p.n || 0) + g.foilQty * (p.f || 0);
+}
+function indexCard(c, idx) {
+  idx.set(c.id, c);
+  idx.set('sc|' + c.set + '|' + normCn(c.cn), c);
+  const full = c.name.toLowerCase(), front = c.name.split(' // ')[0].toLowerCase();
+  idx.set('n|' + full, c);
+  if (!idx.has('n|' + front)) idx.set('n|' + front, c);
+}
+/* Listen-Abgleich: Namen vereinheitlichen, Besitz zusammenfassen, Zeilen beschriften */
+function nameKey(s) {
+  return baseName(s).split('//')[0].replace(/[’‘`]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+}
+function cleanListLine(line) {
+  return String(line).trim().replace(/^\d+\s*[xX]?\s+/, '').replace(/\s*\(.*$/, '').replace(/\s+\*[A-Za-z]+\*$/, '').trim();
+}
+function remarkText(qty, remarkQty) {
+  const e = Object.entries(remarkQty || {});
+  if (!e.length) return 'vorhanden';
+  if (e.length === 1 && e[0][1] === qty) return e[0][0];
+  return e.map(([k, n]) => k + ' (' + n + '×)').join(', ');
+}
+function buildOwned(entries) {
+  const m = new Map();
+  for (const en of entries) {
+    const keys = new Set(en.names.map(nameKey).filter(Boolean));
+    for (const k of keys) {
+      let o = m.get(k);
+      if (!o) { o = { qty: 0, remarkQty: {} }; m.set(k, o); }
+      o.qty += en.qty;
+      for (const [r, n] of Object.entries(en.remarkQty || {})) o.remarkQty[r] = (o.remarkQty[r] || 0) + n;
+    }
+  }
+  return m;
+}
+function annotateList(text, owned) {
+  let total = 0, found = 0;
+  const out = String(text).split(/\r?\n/).map(raw => {
+    const line = raw.replace(/\s+$/, '');
+    if (!line.trim()) return '';
+    if (/^\s*(\/\/|#)/.test(line) || /^\s*(deck|main(deck)?|sideboard|commander|companion|maybe(board)?)\s*:?\s*$/i.test(line)) return line;
+    total++;
+    const hit = owned.get(nameKey(cleanListLine(line)));
+    if (!hit) return line;
+    found++;
+    return line + ' | ' + remarkText(hit.qty, hit.remarkQty);
+  });
+  return { text: out.join('\n'), found, total };
+}
+function chunk(a, n) { const o = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; }
+//#PURE-END
+
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+  const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  const RARITY_DE = { common: 'Gewöhnlich', uncommon: 'Ungewöhnlich', rare: 'Selten', mythic: 'Mythisch', special: 'Special', bonus: 'Bonus' };
+  const RARITY_ORDER = { mythic: 0, rare: 1, uncommon: 2, common: 3 };
+
+  const S = { rows: [], groups: [], index: new Map(), missing: new Set(), removed: new Set(), view: [], perRow: false, label: '', files: [], notice: '', netError: '' };
+  const REM_KEY = 'kartenwand-removed-v1';
+  const visibleGroups = () => S.groups.filter(g => !S.removed.has(g.key));
+  function loadRemoved(label) {
+    try { const o = JSON.parse(localStorage.getItem(REM_KEY) || '{}'); return new Set(o[label] || []); } catch (e) { return new Set(); }
+  }
+  function saveRemoved() {
+    try {
+      const o = JSON.parse(localStorage.getItem(REM_KEY) || '{}');
+      if (S.removed.size) o[S.label] = [...S.removed]; else delete o[S.label];
+      localStorage.setItem(REM_KEY, JSON.stringify(o));
+    } catch (e) { /* ohne Speicher gilt das Entfernen nur für diese Sitzung */ }
+  }
+  const F = { q: '', set: '', file: '', rarity: '', foil: false, names: false, price: true, sort: 'csv' };
+  let lbPos = -1, lbFace = 0, loadToken = 0;
+  let armedOne = false, armedAll = false, armTimer1 = 0, armTimerAll = 0;
+
+  /* ---------- Lokaler Speicher (IndexedDB) für Bilder und Kartendaten ---------- */
+  const IMG = { db: null, off: false, have: new Set(), urls: new Map(), direct: new Set(), pending: new Map(), queue: [], queued: new Set(), active: 0, cors: true, fails: 0, okOnce: false, pauseUntil: 0, netTotal: 0, netDone: 0 };
+  let lbTok = 0, pumping = false, clrTimer = 0;
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const r = indexedDB.open('kartenwand', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('img'); r.result.createObjectStore('cards'); };
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  function idb(mode, fn, store) {
+    return new Promise((resolve, reject) => {
+      const tx = IMG.db.transaction(store || 'img', mode);
+      const rq = fn(tx.objectStore(store || 'img'));
+      tx.oncomplete = () => resolve(rq ? rq.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+  const imgReady = (async () => {
+    try {
+      IMG.db = await idbOpen();
+      for (const k of await idb('readonly', s => s.getAllKeys())) IMG.have.add(k);
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      try { localStorage.removeItem('kartenwand-cache-v2'); } catch (e) { /* egal */ }
+    } catch (e) { IMG.off = true; }
+    updateImgInfo();
+  })();
+
+  async function loadCache() {
+    await imgReady;
+    if (IMG.off) return;
+    try {
+      const arr = await idb('readonly', s => s.get('all'), 'cards');
+      const now = Date.now();
+      for (const c of (arr || [])) if (c && c.id && c.name && c.img && c.t && now - c.t < CACHE_MAX_AGE) indexCard(c, S.index);
+    } catch (e) { /* ohne Cache weiter */ }
+  }
+  function saveCache() {
+    if (IMG.off) return;
+    const seen = new Map();
+    for (const c of S.index.values()) seen.set(c.id, c);
+    idb('readwrite', s => s.put([...seen.values()], 'all'), 'cards').catch(() => { /* Speicher voll oder gesperrt */ });
+  }
+
+  async function download(u) {
+    for (let attempt = 0; ; attempt++) {
+      const wait = IMG.pauseUntil - Date.now();
+      if (wait > 0) await sleep(wait);
+      const res = await fetch(u, { mode: 'cors', credentials: 'omit' });
+      if (res.ok) return res.blob();
+      if ((res.status === 429 || res.status === 403 || res.status >= 500) && attempt < 3) {
+        IMG.pauseUntil = Date.now() + 5000 * (attempt + 1);
+        continue;
+      }
+      throw new Error('Status ' + res.status);
+    }
+  }
+  function getBlobURL(u) {
+    if (IMG.urls.has(u)) return Promise.resolve(IMG.urls.get(u));
+    if (IMG.pending.has(u)) return IMG.pending.get(u);
+    const p = (async () => {
+      await imgReady;
+      if (IMG.off) return null;
+      let blob = null;
+      if (IMG.have.has(u)) {
+        try { blob = await idb('readonly', s => s.get(u)); } catch (e) { blob = null; }
+        if (!blob) IMG.have.delete(u);
+      }
+      if (!blob) {
+        if (!IMG.cors) return null;
+        blob = await download(u);
+        IMG.okOnce = true;
+        try { await idb('readwrite', s => s.put(blob, u)); IMG.have.add(u); updateImgInfo(); } catch (e) { /* Speicher voll: Bild wird nur angezeigt */ }
+      }
+      const b = URL.createObjectURL(blob);
+      IMG.urls.set(u, b);
+      return b;
+    })();
+    IMG.pending.set(u, p);
+    p.then(() => IMG.pending.delete(u), () => IMG.pending.delete(u));
+    return p;
+  }
+  function setImgs(u, src) {
+    for (const img of $('grid').querySelectorAll('img[data-u]')) if (img.dataset.u === u && img.getAttribute('src') !== src) img.src = src;
+  }
+  function imgFailed(u, e) {
+    IMG.direct.add(u);
+    setImgs(u, u);
+    if (e instanceof TypeError && !IMG.okOnce) {
+      IMG.fails++;
+      if (IMG.fails >= 3 && IMG.cors) {
+        IMG.cors = false;
+        for (const q of IMG.queue.splice(0)) { if (!IMG.have.has(q)) { IMG.direct.add(q); setImgs(q, q); } else IMG.queue.push(q); }
+        showError('Die Bilder konnten nicht lokal gespeichert werden (kein Zugriff oder keine Verbindung). Sie werden direkt von Scryfall geladen.');
+        updateImgProgress();
+      }
+    }
+  }
+  function updateImgProgress() {
+    const w = $('imgWrap');
+    if (IMG.off || !IMG.cors || !IMG.netTotal) { w.hidden = true; return; }
+    if (IMG.netDone >= IMG.netTotal && !IMG.queue.length) { w.hidden = true; IMG.netTotal = 0; IMG.netDone = 0; return; }
+    w.hidden = false;
+    $('iprog').max = IMG.netTotal; $('iprog').value = IMG.netDone;
+    $('itext').textContent = 'Bilder werden lokal gespeichert: ' + IMG.netDone + ' von ' + IMG.netTotal;
+  }
+  function updateImgInfo() {
+    const el = $('imginfo'), b = $('imgclear');
+    if (IMG.off) { el.textContent = 'Der lokale Bildspeicher ist in diesem Browser nicht verfügbar.'; b.hidden = true; return; }
+    el.textContent = 'Lokal gespeicherte Bilder: ' + IMG.have.size;
+    b.hidden = !IMG.have.size;
+  }
+  async function work(u) {
+    const net = !IMG.have.has(u);
+    try {
+      const b = await getBlobURL(u);
+      if (b) setImgs(u, b); else { IMG.direct.add(u); setImgs(u, u); }
+    } catch (e) { imgFailed(u, e); }
+    if (net) IMG.netDone++;
+    updateImgProgress();
+  }
+  async function pump() {
+    if (pumping) return;
+    pumping = true;
+    while (IMG.queue.length) {
+      if (IMG.active >= 4) { await sleep(60); continue; }
+      const u = IMG.queue.shift();
+      const net = !IMG.have.has(u);
+      IMG.active++;
+      work(u).finally(() => { IMG.active--; });
+      await sleep(net && IMG.cors ? 100 : 0);
+    }
+    pumping = false;
+  }
+  function enqueue(u) {
+    if (IMG.queued.has(u) || IMG.pending.has(u)) return;
+    IMG.queued.add(u); IMG.queue.push(u);
+    if (!IMG.have.has(u)) { IMG.netTotal++; updateImgProgress(); }
+    pump();
+  }
+  function hydrate() {
+    for (const img of $('grid').querySelectorAll('img[data-u]')) {
+      const u = img.dataset.u, b = IMG.urls.get(u);
+      if (b) img.src = b;
+      else if (IMG.direct.has(u) || (!IMG.cors && !IMG.have.has(u))) { IMG.direct.add(u); img.src = u; }
+      else enqueue(u);
+    }
+  }
+  function prefetchAll() {
+    for (const g of visibleGroups()) { const c = S.index.get(g.key); if (c && c.img[0]) enqueue(c.img[0].n); }
+  }
+  $('imgclear').addEventListener('click', async () => {
+    const b = $('imgclear');
+    if (!b.dataset.armed) {
+      b.dataset.armed = '1'; b.textContent = 'Wirklich leeren?'; b.classList.add('armed');
+      clrTimer = setTimeout(() => { delete b.dataset.armed; b.textContent = 'Bild-Speicher leeren'; b.classList.remove('armed'); }, 4000);
+      return;
+    }
+    clearTimeout(clrTimer); delete b.dataset.armed; b.textContent = 'Bild-Speicher leeren'; b.classList.remove('armed');
+    try { await idb('readwrite', s => s.clear()); } catch (e) { /* egal */ }
+    for (const v of IMG.urls.values()) URL.revokeObjectURL(v);
+    IMG.urls.clear(); IMG.have.clear(); IMG.direct.clear(); IMG.queued.clear();
+    updateImgInfo(); render(); prefetchAll();
+  });
+
+  /* ---------- Scryfall ---------- */
+  async function postCollection(identifiers) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const res = await fetch('https://api.scryfall.com/cards/collection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json;q=0.9,*/*;q=0.8' },
+        body: JSON.stringify({ identifiers })
+      });
+      if (res.ok) return res.json();
+      if (res.status === 429) {
+        setStatus('Scryfall hat das Abfrage-Limit gemeldet. Es geht in 30 Sekunden automatisch weiter …');
+        await sleep(31000);
+        continue;
+      }
+      if (res.status >= 500) { await sleep(1500 * (attempt + 1)); continue; }
+      throw new Error('Scryfall antwortet mit Status ' + res.status + '.');
+    }
+    throw new Error('Scryfall ist gerade überlastet. Bitte später noch einmal versuchen. Bereits geladene Karten bleiben gespeichert.');
+  }
+
+  async function resolveCards(token) {
+    const need = new Map();
+    for (const g of S.groups) {
+      if (S.index.has(g.key) || S.missing.has(g.key)) continue;
+      need.set(g.key, identifierFor(g));
+    }
+    if (!need.size) return;
+    const entries = [...need.entries()], batches = chunk(entries, 75);
+    let done = 0;
+    setStatus('Lade Kartendaten 0 von ' + entries.length + ' …', 0);
+    for (let b = 0; b < batches.length; b++) {
+      const data = await postCollection(batches[b].map(e => e[1]));
+      if (token !== loadToken) return;
+      for (const c of (data.data || [])) indexCard(slim(c), S.index);
+      done += batches[b].length;
+      setStatus('Lade Kartendaten ' + done + ' von ' + entries.length + ' …', done / entries.length);
+      if (b === 0) { buildSetOptions(); render(); }
+      saveCache();
+      if (b < batches.length - 1) await sleep(550);
+    }
+    for (const [k] of entries) if (!S.index.has(k)) S.missing.add(k);
+    saveCache();
+  }
+
+  /* ---------- Laden ---------- */
+  async function loadCSV(text, label) {
+    let rows;
+    try {
+      rows = buildRows(parseCSV(text));
+      if (!rows.length) throw new Error('In der Datei wurden keine Karten gefunden.');
+    } catch (e) { showError(e.message); return; }
+    await loadParts([{ name: label, rows }], false, []);
+  }
+  function readAsText(f) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(new Error('Die Datei konnte nicht gelesen werden.'));
+      r.readAsText(f, 'utf-8');
+    });
+  }
+  async function loadFiles(files, append) {
+    const parts = [], errors = [];
+    for (const f of files) {
+      try {
+        const rows = buildRows(parseCSV(await readAsText(f)));
+        if (!rows.length) throw new Error('In der Datei wurden keine Karten gefunden.');
+        parts.push({ name: f.name, rows });
+      } catch (e) { errors.push('„' + f.name + '“: ' + e.message); }
+    }
+    if (!parts.length) { S.notice = ''; showError(errors.join(' ')); return; }
+    await loadParts(parts, append, errors);
+  }
+  async function loadParts(parts, append, errors) {
+    let rows = [], names = [];
+    if (append) {
+      const incoming = new Set(parts.map(p => p.name));
+      rows = S.rows.filter(r => !incoming.has(r.file));
+      names = S.files.filter(n => !incoming.has(n));
+    }
+    for (const p of parts) {
+      if (!names.includes(p.name)) names.push(p.name);
+      for (const r of p.rows) rows.push({ ...r, file: p.name });
+    }
+    rows.forEach((r, i) => { r.order = i; });
+    S.rows = rows; S.files = names; S.label = names.slice().sort().join(' + ');
+    S.missing = new Set();
+    S.notice = errors.length ? 'Nicht geladen: ' + errors.join(' ') : '';
+    if (append) saveRemoved(); else { S.removed = loadRemoved(S.label); F.file = ''; }
+    buildFileOptions();
+    $('fname').textContent = names.length === 1 ? names[0] : names.length + ' Dateien: ' + names.join(', ');
+    $('fname').title = names.join('\n');
+    await refresh();
+  }
+  function buildFileOptions() {
+    const sel = $('ffile');
+    $('ffileWrap').hidden = S.files.length < 2;
+    sel.innerHTML = '<option value="">Alle Dateien</option>' + S.files.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+    if (!S.files.includes(F.file)) F.file = '';
+    sel.value = F.file;
+  }
+  async function refresh() {
+    const token = ++loadToken;
+    showError('');
+    S.groups = groupRows(S.rows, S.perRow);
+    buildSetOptions();
+    render();
+    try {
+      await resolveCards(token);
+    } catch (e) {
+      if (token !== loadToken) return;
+      const offline = e instanceof TypeError;
+      showError(offline
+        ? 'Scryfall ist nicht erreichbar. Prüfe die Internetverbindung und lade die Datei erneut. Karten ohne Bild sind gestrichelt dargestellt.'
+        : e.message);
+    }
+    if (token !== loadToken) return;
+    setStatus('');
+    buildSetOptions();
+    render();
+    prefetchAll();
+  }
+
+  /* ---------- Anzeige ---------- */
+  function setStatus(text, p) {
+    $('statusWrap').hidden = !text;
+    $('statusText').textContent = text || '';
+    if (p != null) $('prog').value = p;
+  }
+  function showError(msg) {
+    const all = [S.notice, msg].filter(Boolean).join(' ');
+    $('errWrap').hidden = !all;
+    $('err').innerHTML = all ? '<b>Hinweis:</b> ' + esc(all) : '';
+  }
+  function buildSetOptions() {
+    const sel = $('fset'), cur = F.set, sets = new Map();
+    for (const g of visibleGroups()) {
+      const c = S.index.get(g.key);
+      if (!c) continue;
+      const s = sets.get(c.set) || { name: c.setName, n: 0 };
+      s.n++; sets.set(c.set, s);
+    }
+    const opts = [...sets.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name, 'de'));
+    sel.innerHTML = '<option value="">Alle Sets</option>' + opts.map(([code, s]) => '<option value="' + esc(code) + '">' + esc(s.name) + ' (' + s.n + ')</option>').join('');
+    sel.value = sets.has(cur) ? cur : '';
+    if (sel.value !== cur) F.set = sel.value;
+  }
+  function computeView() {
+    let v = visibleGroups().map(g => ({ g, c: S.index.get(g.key) || null }));
+    const q = F.q.trim().toLowerCase();
+    if (q) v = v.filter(x => ((x.c ? x.c.name : '') + ' ' + x.g.name + ' ' + Object.keys(x.g.remarkQty).join(' ')).toLowerCase().includes(q));
+    if (F.set) v = v.filter(x => x.c && x.c.set === F.set);
+    if (F.rarity) v = v.filter(x => x.c && (F.rarity === 'special' ? (x.c.rarity === 'special' || x.c.rarity === 'bonus') : x.c.rarity === F.rarity));
+    if (F.file) v = v.filter(x => (x.g.fileQty[F.file] || 0) > 0).map(x => ({ ...x, g: { ...x.g, qty: x.g.fileQty[F.file], foilQty: Math.min(x.g.fileFoil[F.file] || 0, x.g.fileQty[F.file]) } }));
+    if (F.foil) v = v.filter(x => x.g.foilQty > 0);
+    const nm = x => (x.c ? x.c.name : x.g.name);
+    const cmpCn = (a, b) => parseInt(normCn(a), 10) - parseInt(normCn(b), 10) || normCn(a).localeCompare(normCn(b));
+    const sorters = {
+      csv: (a, b) => a.g.order - b.g.order,
+      name: (a, b) => nm(a).localeCompare(nm(b), 'de') || a.g.order - b.g.order,
+      qty: (a, b) => b.g.qty - a.g.qty || nm(a).localeCompare(nm(b), 'de'),
+      set: (a, b) => (a.c ? a.c.setName : '~').localeCompare(b.c ? b.c.setName : '~', 'de') || cmpCn(a.c ? a.c.cn : '', b.c ? b.c.cn : ''),
+      rarity: (a, b) => (RARITY_ORDER[a.c && a.c.rarity] ?? 4) - (RARITY_ORDER[b.c && b.c.rarity] ?? 4) || nm(a).localeCompare(nm(b), 'de'),
+      value: (a, b) => (groupValue(b.g, b.c) || 0) - (groupValue(a.g, a.c) || 0) || nm(a).localeCompare(nm(b), 'de')
+    };
+    v.sort(sorters[F.sort] || sorters.csv);
+    return v;
+  }
+  function render() {
+    S.view = computeView();
+    const grid = $('grid');
+    grid.innerHTML = S.view.map((x, i) => {
+      const { g, c } = x, name = c ? c.name : g.name;
+      const p = unitPrices(c), unit = g.foilQty === g.qty ? p.f : p.n;
+      const badges = '<span class="qty">×' + g.qty + '</span>' +
+        (g.foilQty ? '<span class="foilmark">Foil' + (g.foilQty < g.qty ? ' ×' + g.foilQty : '') + '</span>' : '') +
+        (F.price && unit != null ? '<span class="price">' + esc(eur.format(unit)) + '</span>' : '');
+      const card = c && c.img[0]
+        ? '<span class="card"><img data-u="' + esc(c.img[0].n) + '" alt="" decoding="async" width="488" height="680">' + (g.foilQty ? '<span class="foilfx"></span>' : '') + badges + '</span>'
+        : '<span class="card missing"><span><b>' + esc(name) + '</b>' + (S.missing.has(g.key) ? 'Nicht bei Scryfall gefunden' : 'Bild wird geladen') + '</span>' + badges + '</span>';
+      const cap = F.names ? '<span class="cap">' + esc(name) + (c ? '<small>' + esc(c.setName) + ' · #' + esc(c.cn) + '</small>' : '') + '</span>' : '';
+      return '<div class="cell"><button class="tile" type="button" data-i="' + i + '" aria-label="' + esc(name + ', ' + g.qty + ' Stück') + '">' + card + cap + '</button>' +
+        '<button class="rm" type="button" data-i="' + i + '" aria-label="' + esc(name + ' entfernen') + '" title="Karte entfernen">×</button></div>';
+    }).join('');
+    const vis = visibleGroups();
+    $('empty').hidden = S.view.length > 0;
+    $('emptyText').textContent = vis.length ? 'Keine Karte passt zu den aktuellen Filtern.' : 'Alle Karten wurden entfernt. Du kannst sie wiederherstellen oder eine andere CSV-Datei laden.';
+    const total = vis.reduce((s, g) => s + g.qty, 0), shown = S.view.reduce((s, x) => s + x.g.qty, 0);
+    const filtered = S.view.length !== vis.length;
+    $('restore').hidden = !S.removed.size;
+    $('restore').textContent = 'Entfernte wiederherstellen (' + S.removed.size + ')';
+    $('clearall').disabled = !vis.length;
+    if (!armedAll) $('clearall').textContent = 'Alle entfernen';
+    const worth = S.view.reduce((s, x) => s + (groupValue(x.g, x.c) || 0), 0);
+    const worthTxt = worth > 0 ? ' · ca. ' + eur.format(worth) : '';
+    $('count').textContent = vis.length
+      ? (filtered ? S.view.length + ' von ' + vis.length + ' Karten (' + shown + ' Stück)' : vis.length + ' Karten · ' + total + ' Stück') + worthTxt
+      : '';
+    hydrate();
+  }
+
+  /* ---------- Großansicht ---------- */
+  function openLB(i) {
+    lbPos = i; lbFace = 0;
+    const lb = $('lb');
+    fillLB();
+    if (!lb.open) lb.showModal();
+  }
+  function fillLB() {
+    const x = S.view[lbPos]; if (!x) return;
+    const { g, c } = x, img = c && c.img[lbFace] ? c.img[lbFace] : (c && c.img[0]);
+    const tok = ++lbTok;
+    $('lbimg').src = img ? (IMG.urls.get(img.l) || IMG.urls.get(img.n) || img.n) : '';
+    if (img && !IMG.urls.has(img.l)) {
+      const keep = IMG.urls.has(img.n);
+      getBlobURL(img.l).then(b => { if (tok === lbTok && (b || !keep)) $('lbimg').src = b || img.l; }, () => { if (tok === lbTok && !keep) $('lbimg').src = img.l; });
+    }
+    $('lbimg').alt = c ? c.name : g.name;
+    $('lbname').textContent = c ? c.name : g.name;
+    $('lbtype').textContent = c ? c.type : 'Diese Karte wurde bei Scryfall nicht gefunden.';
+    const rows = [];
+    if (c) {
+      rows.push(['Set', c.setName + ' (' + c.set.toUpperCase() + ')']);
+      rows.push(['Nummer', c.cn]);
+      rows.push(['Seltenheit', RARITY_DE[c.rarity] || c.rarity]);
+    }
+    rows.push(['Anzahl', g.qty + '×' + (g.foilQty ? ' (davon ' + g.foilQty + ' Foil)' : '')]);
+    if (c) {
+      const parts = [];
+      if (c.pe != null) parts.push('Normal ' + eur.format(c.pe));
+      if (c.pf != null) parts.push('Foil ' + eur.format(c.pf));
+      rows.push(['Preis', parts.length ? parts.join(' · ') : 'keine Angabe']);
+      const v = groupValue(g, c);
+      if (v != null) rows.push(['Wert', eur.format(v)]);
+    }
+    if (g.langs.length) rows.push(['Sprache', g.langs.join(', ')]);
+    const rk = Object.entries(g.remarkQty);
+    rows.push(['Bemerkung', rk.length ? (rk.length === 1 ? rk[0][0] : rk.map(([k, n]) => k + ' (' + n + '×)').join(', ')) : 'Keine']);
+    if (g.binders.length) rows.push(['Ordner', g.binders.join(', ')]);
+    if (S.files.length > 1) rows.push(['Datei', Object.entries(g.fileQty).map(([k, n]) => k + ' (' + n + '×)').join(', ')]);
+    $('lbdl').innerHTML = rows.map(r => '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>').join('');
+    const link = $('lblink');
+    link.hidden = !(c && c.uri);
+    if (c && c.uri) link.href = c.uri;
+    const cm = $('lbcm');
+    cm.hidden = !(c && c.cm);
+    if (c && c.cm) cm.href = c.cm;
+    const flip = $('lbflip');
+    flip.hidden = !(c && c.img.length > 1);
+    flip.textContent = lbFace ? 'Vorderseite zeigen' : 'Rückseite zeigen';
+    armedOne = false; clearTimeout(armTimer1);
+    $('lbremove').textContent = 'Karte entfernen';
+    $('lbremove').classList.remove('armed');
+    $('lbprev').disabled = lbPos <= 0;
+    $('lbnext').disabled = lbPos >= S.view.length - 1;
+  }
+  function stepLB(d) {
+    const n = lbPos + d;
+    if (n < 0 || n >= S.view.length) return;
+    lbPos = n; lbFace = 0; fillLB();
+  }
+
+  /* ---------- Ereignisse ---------- */
+  $('grid').addEventListener('click', e => {
+    const rm = e.target.closest('.rm');
+    if (rm) { const x = S.view[+rm.dataset.i]; if (x) { S.removed.add(x.g.key); saveRemoved(); buildSetOptions(); render(); } return; }
+    const t = e.target.closest('.tile');
+    if (t) openLB(+t.dataset.i);
+  });
+  $('lbclose').addEventListener('click', () => $('lb').close());
+  $('lb').addEventListener('click', e => { if (e.target === $('lb')) $('lb').close(); });
+  $('lbprev').addEventListener('click', () => stepLB(-1));
+  $('lbnext').addEventListener('click', () => stepLB(1));
+  $('lbflip').addEventListener('click', () => { lbFace = lbFace ? 0 : 1; fillLB(); });
+
+  /* Entfernen: erst Klick fragt nach, zweiter Klick führt aus */
+  $('lbremove').addEventListener('click', () => {
+    const btn = $('lbremove');
+    if (!armedOne) {
+      armedOne = true; btn.textContent = 'Wirklich entfernen?'; btn.classList.add('armed');
+      armTimer1 = setTimeout(() => { armedOne = false; btn.textContent = 'Karte entfernen'; btn.classList.remove('armed'); }, 4000);
+      return;
+    }
+    const x = S.view[lbPos]; if (!x) return;
+    S.removed.add(x.g.key); saveRemoved();
+    buildSetOptions(); render();
+    if (!S.view.length) { $('lb').close(); return; }
+    lbPos = Math.min(lbPos, S.view.length - 1); lbFace = 0; fillLB();
+  });
+  $('clearall').addEventListener('click', () => {
+    const btn = $('clearall');
+    if (!armedAll) {
+      armedAll = true; btn.textContent = 'Wirklich alle entfernen?'; btn.classList.add('armed');
+      armTimerAll = setTimeout(() => { armedAll = false; btn.classList.remove('armed'); btn.textContent = 'Alle entfernen'; }, 4000);
+      return;
+    }
+    clearTimeout(armTimerAll); armedAll = false; btn.classList.remove('armed');
+    for (const g of S.groups) S.removed.add(g.key);
+    saveRemoved(); buildSetOptions(); render();
+  });
+  $('restore').addEventListener('click', () => {
+    S.removed = new Set(); saveRemoved(); buildSetOptions(); render();
+  });
+  /* ---------- Listen-Abgleich ---------- */
+  function runCheck() {
+    const entries = visibleGroups().map(g => { const c = S.index.get(g.key); return { names: [g.name, c ? c.name : ''], qty: g.qty, remarkQty: g.remarkQty }; });
+    const res = annotateList($('chkin').value, buildOwned(entries));
+    $('chkout').value = res.text;
+    $('chksum').textContent = res.total ? res.found + ' von ' + res.total + ' Karten vorhanden' : '';
+  }
+  let copyTimer = 0;
+  $('checkopen').addEventListener('click', () => {
+    runCheck();
+    if (!$('chk').open) $('chk').showModal();
+    $('chkin').focus();
+  });
+  $('chkclose').addEventListener('click', () => $('chk').close());
+  $('chk').addEventListener('click', e => { if (e.target === $('chk')) $('chk').close(); });
+  $('chkin').addEventListener('input', runCheck);
+  $('chkcopy').addEventListener('click', async () => {
+    const ta = $('chkout'), btn = $('chkcopy');
+    try { await navigator.clipboard.writeText(ta.value); }
+    catch (e) { ta.focus(); ta.select(); try { document.execCommand('copy'); } catch (e2) { /* Text bleibt markiert */ } }
+    btn.textContent = 'Kopiert';
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { btn.textContent = 'Ergebnis kopieren'; }, 1600);
+  });
+  document.addEventListener('keydown', e => {
+    if (!$('lb').open) return;
+    if (e.key === 'ArrowLeft') stepLB(-1);
+    if (e.key === 'ArrowRight') stepLB(1);
+  });
+
+  $('q').addEventListener('input', e => { F.q = e.target.value; render(); });
+  $('fset').addEventListener('change', e => { F.set = e.target.value; render(); });
+  $('frar').addEventListener('change', e => { F.rarity = e.target.value; render(); });
+  $('fsort').addEventListener('change', e => { F.sort = e.target.value; render(); });
+  $('ffoil').addEventListener('change', e => { F.foil = e.target.checked; render(); });
+  $('fnames').addEventListener('change', e => { F.names = e.target.checked; render(); });
+  $('fprice').addEventListener('change', e => { F.price = e.target.checked; render(); });
+  $('frow').addEventListener('change', e => { S.perRow = e.target.checked; refresh(); });
+  $('ftile').addEventListener('input', e => { $('grid').style.setProperty('--tile', e.target.value + 'px'); });
+
+  function pickFiles(input, append) {
+    const list = [...input.files];
+    input.value = '';
+    if (list.length) loadFiles(list, append);
+  }
+  $('pick').addEventListener('click', () => $('file').click());
+  $('pickadd').addEventListener('click', () => $('fileadd').click());
+  $('file').addEventListener('change', e => pickFiles(e.target, false));
+  $('fileadd').addEventListener('change', e => pickFiles(e.target, true));
+  $('ffile').addEventListener('change', e => { F.file = e.target.value; render(); });
+  let dragDepth = 0;
+  window.addEventListener('dragenter', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { dragDepth++; $('drop').classList.add('on'); } });
+  window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('drop').classList.remove('on'); });
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => {
+    e.preventDefault(); dragDepth = 0; $('drop').classList.remove('on');
+    const list = e.dataTransfer ? [...e.dataTransfer.files] : [];
+    if (list.length) loadFiles(list, false);
+  });
+
+  /* ---------- Start ---------- */
+  if (window.innerWidth < 520) { $('ftile').value = 140; $('grid').style.setProperty('--tile', '140px'); }
+  loadCache().finally(() => {
+    const sample = $('sample-csv').textContent.trim();
+    if (sample) loadCSV(sample, 'export_Manabox_2026-11-02_114711.csv');
+  });
+})();
+</script>
+</body>
+</html>
